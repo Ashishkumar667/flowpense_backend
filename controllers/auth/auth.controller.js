@@ -13,9 +13,9 @@ dotenv.config();
 
 export const registerUser = asyncHandler(async (req, res) => {
    try {
-     const { firstName, lastName, email, password, confirmPassword, mobileNumber } = req.body;
+     const { firstName, lastName, email, password, confirmPassword, mobileNumber, role } = req.body;
  
-     if(!firstName || !email || !password || !confirmPassword || !mobileNumber){
+     if(!firstName || !email || !password || !confirmPassword || !mobileNumber || !role){
          return res.status(400).json({ message: "All fields are required" });
      } 
 
@@ -43,6 +43,7 @@ export const registerUser = asyncHandler(async (req, res) => {
             email,
             password:hashedPassword,
             mobile : mobileNumber,
+            role: role,
             isVerified: false,
         }
         
@@ -52,6 +53,7 @@ export const registerUser = asyncHandler(async (req, res) => {
      const token = jwt.sign({ 
         userId: newUser.id,
         email: newUser.email,
+        role: newUser.role,
      }, process.env.JWT_SECRET, { expiresIn: '1h'}
      );
 
@@ -145,6 +147,7 @@ export const loginUser = asyncHandler(async(req, res) => {
         const token = jwt.sign({ 
             userId: user.id,
             email: user.email,
+            role: user.role,
          }, process.env.JWT_SECRET, { expiresIn: '7d'}
          );
 
@@ -155,6 +158,7 @@ export const loginUser = asyncHandler(async(req, res) => {
                 lastName: user.lastName,
                 email: user.email,
                 mobile: user.mobile,
+                role: user.role,
                 isVerified: user.isVerified,
                 createdAt: user.createdAt,
             },
@@ -180,6 +184,7 @@ export const getUserProfile = asyncHandler(async(req, res) => {
                   lastName: true,
                   email: true,
                   mobile: true,
+                  role: true,
                   isVerified: true,
                   createdAt: true, 
             
@@ -272,6 +277,7 @@ export const verifyForgotPassOtp = asyncHandler(async(req, res) => {
                   lastName: true,
                   email: true,
                   mobile: true,
+                  role: true,
                   isVerified: true,
                   createdAt: true, 
             
@@ -302,6 +308,7 @@ export const verifyForgotPassOtp = asyncHandler(async(req, res) => {
          const token = jwt.sign({
             userId: user.id,
             email: user.email,
+            role: user.role,
         }, process.env.JWT_SECRET, 
         { expiresIn: '1h'}
         
