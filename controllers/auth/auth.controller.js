@@ -109,8 +109,16 @@ export const verifyEmail = asyncHandler(async(req, res) => {
         await prisma.otp.delete({
             where: { userId }
         });
+
+        const token = jwt.sign({
+                    userId: newUser.id,
+                    email: newUser.email,
+                    role: newUser.role,
+             }, process.env.JWT_SECRET, { expiresIn: '1h'}
+        )
         res.status(200).json({ 
-            message: "Email verified successfully.You can now login to your account" 
+            message: "Email verified successfully.Now, please verify 2FA then You can now login to your account",
+            Token: token
 
         });   
     } catch (error) {
@@ -136,6 +144,10 @@ export const loginUser = asyncHandler(async(req, res) => {
 
         if(!user.isVerified){
             return res.status(400).json({ message: "Please verify your email to login" });
+        }
+
+        if(!user.mfaEnabled){
+            return res.status(400).json({ message: "Please enable and verify 2FA to login" });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -186,6 +198,7 @@ export const getUserProfile = asyncHandler(async(req, res) => {
                   mobile: true,
                   role: true,
                   isVerified: true,
+                  mfaEnabled: true,
                   createdAt: true, 
             
             }

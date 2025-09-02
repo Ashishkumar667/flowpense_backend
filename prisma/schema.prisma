@@ -16,6 +16,7 @@ datasource db {
 enum Role {
   EMPLOYEE
   SUPERADMIN
+  TEAMLEAD
   ADMIN
 }
 
@@ -30,6 +31,8 @@ model User {
   mobile       String       @unique
   createdAt    DateTime     @default(now())
   role         Role         @default(EMPLOYEE)
+  mfaSecret    String?
+  mfaEnabled   Boolean      @default(false)
   otp          Otp?
 }
 
