@@ -34,6 +34,8 @@ model User {
   mfaSecret    String?
   mfaEnabled   Boolean      @default(false)
   otp          Otp?
+  companyId    Int?
+  company      Company?     @relation(fields: [companyId], references: [id])
 }
 
 model Otp {
@@ -44,3 +46,42 @@ model Otp {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+model Company {
+  id            Int           @id @default(autoincrement())
+  name          String
+  rcNumber      String         // CAC registration number
+  tin           String         // Tax Identification Number
+  country       String
+  kycStatus     String         @default("pending")
+  walletBalance Float          @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  users        User[]
+  companyKyc   CompanyKyc?
+  walletLedger WalletLedger[]
+}
+
+model CompanyKyc {
+  id           Int      @id @default(autoincrement())
+  companyId    Int      @unique
+  docs         Json     // Store uploaded docs as JSON (e.g. file URLs)
+  adminBvnHash String
+  status       String   @default("pending")
+  reviewerId   Int?     // SuperAdmin reviewing KYC
+  createdAt    DateTime @default(now())
+
+  company     Company   @relation(fields: [companyId], references: [id])
+}
+
+model WalletLedger {
+  id           Int      @id @default(autoincrement())
+  companyId    Int
+  txType       String   // credit, hold, settle, refund, reversal
+  amount       Float
+  currency     String   @default("NGN")
+  balanceAfter Float
+  createdAt    DateTime @default(now())
+
+  company     Company   @relation(fields: [companyId], references: [id])
+}
