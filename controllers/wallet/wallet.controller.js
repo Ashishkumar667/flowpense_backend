@@ -8,12 +8,13 @@ import {
 
 export const topupWallet = asyncHandler(async (req, res) => {
   try {
+    //const userId = req.user.id;
     const { companyId, amount, currency } = req.body;
 
   if (!companyId || !amount) {
     return res.status(400).json({ error: "companyId and amount are required" });
   }
-
+  console.log("Decoded User:", req.user);
       
     if (req.user.role !== "ADMIN" && req.user.role !== "SUPERADMIN") {
       return res.status(403).json({ error: "Only admins can top up the wallet" });
@@ -60,7 +61,7 @@ export const stripeWebhook = asyncHandler(async (req, res) => {
   try {
     const sig = req.headers["stripe-signature"];
     event = stripe.webhooks.constructEvent(
-      req.rawBody, 
+      req.body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
@@ -69,14 +70,24 @@ export const stripeWebhook = asyncHandler(async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === "payment_intent.succeeded") {
-    const paymentIntent = event.data.object;
-    const companyId = parseInt(paymentIntent.metadata.companyId);
-    const amount = paymentIntent.amount_received / 100;
-    const currency = paymentIntent.currency;
+  // if (event.type === "payment_intent.succeeded") {
+  //   const paymentIntent = event.data.object;
+  //   const companyId = parseInt(paymentIntent.metadata.companyId);
+  //   const amount = paymentIntent.amount_received / 100;
+  //   const currency = paymentIntent.currency;
+
+  //   await topupWalletService({ companyId, amount, currency });
+  //   console.log(`Wallet credited (PI) for company ${companyId} with ${amount} ${currency}`);
+  // }
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    const companyId = parseInt(session.metadata.companyId);
+    const amount = session.amount_total / 100;
+    const currency = session.currency;
 
     await topupWalletService({ companyId, amount, currency });
-    console.log(`Wallet credited for company ${companyId} with ${amount} ${currency}`);
+    console.log(`Wallet credited (CS) for company ${companyId} with ${amount} ${currency}`);
   }
 
   res.json({ received: true });

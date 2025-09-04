@@ -25,6 +25,8 @@ export const protectedRoutes = asyncHandler(async (req, res, next) => {
       req.user = {
         id: decoded.userId,
         email: decoded.email,
+        role: decoded.role,
+        companyId: decoded.companyId
       };
 
       next();

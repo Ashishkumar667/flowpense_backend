@@ -54,6 +54,7 @@ export const registerUser = asyncHandler(async (req, res) => {
         userId: newUser.id,
         email: newUser.email,
         role: newUser.role,
+        companyId: newUser.companyId,
      }, process.env.JWT_SECRET, { expiresIn: '1h'}
      );
 
@@ -160,6 +161,7 @@ export const loginUser = asyncHandler(async(req, res) => {
             userId: user.id,
             email: user.email,
             role: user.role,
+            companyId: user.companyId,
          }, process.env.JWT_SECRET, { expiresIn: '7d'}
          );
 
@@ -171,6 +173,7 @@ export const loginUser = asyncHandler(async(req, res) => {
                 email: user.email,
                 mobile: user.mobile,
                 role: user.role,
+                companyId: user.companyId,
                 isVerified: user.isVerified,
                 createdAt: user.createdAt,
             },

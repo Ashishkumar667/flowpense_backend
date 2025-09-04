@@ -32,10 +32,13 @@ export const registerCompany = asyncHandler(async(req, res) => {
 export const uploadCompanyKyc = asyncHandler(async(req, res) => {
  try {
     const { companyId, docs, adminBvn } = req.body;
+    console.log("kyc details",companyId, adminBvn, docs);
 
     if (!companyId || !docs || !adminBvn) {
       return res.status(400).json({ error: "Missing KYC fields" });
     }
+
+    
 
     const kyc = await uploadCompanyKycService({ companyId, docs, adminBvn });
 
@@ -58,18 +61,17 @@ export const getCompanyDetails = asyncHandler(async( req, res) => {
         const company = await prisma.company.findUnique({
             where: { id: parseInt(companyId) },
             include: {
-                users: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                        role: true
-                    }
-                },
-                name: true,
-                kycStatus: true,
-                country: true,
-                walletBalance: true
+                 users: {
+                  select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true
+               }
+          },
+                 companyKyc: true,
+                 walletLedger: true
             }
         });
 
@@ -79,7 +81,7 @@ export const getCompanyDetails = asyncHandler(async( req, res) => {
 
         res.status(200).json({ success: true, company });
     } catch (error) {
-        console.error(err);
+        console.error(error);
         res.status(500).json({ error: "Failed to get comapny details" , error: error.message});
     }
 });
