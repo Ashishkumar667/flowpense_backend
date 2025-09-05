@@ -9,6 +9,9 @@ import {
     passwordResetEmailTemplate,
     resetpasswordConfirmationEmailTemplate
 } from '../../utils/email/emailtemplate/email.template.js';
+import {
+    generateTokens
+} from '../../utils/generateToken/generate.token.js';
 dotenv.config();
 
 export const registerUser = asyncHandler(async (req, res) => {
@@ -50,13 +53,23 @@ export const registerUser = asyncHandler(async (req, res) => {
      });
     
 
-     const token = jwt.sign({ 
+    //  const token = jwt.sign({ 
+    //     userId: newUser.id,
+    //     email: newUser.email,
+    //     role: newUser.role,
+    //     companyId: newUser.companyId,
+    //  }, process.env.JWT_SECRET, { expiresIn: '1h'}
+    //  );
+    const { accessToken, refreshToken } = generateTokens(newUser);
+
+    // Save refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
         userId: newUser.id,
-        email: newUser.email,
-        role: newUser.role,
-        companyId: newUser.companyId,
-     }, process.env.JWT_SECRET, { expiresIn: '1h'}
-     );
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();  //valid for 10 minutes
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
@@ -78,7 +91,8 @@ export const registerUser = asyncHandler(async (req, res) => {
       .json({
         message: "User created successfully.We have sent an email verification code to youe email.Please verify your email to login",
         user:newUser,
-        Token: token
+        accessToken,
+        refreshToken,
       })
    } catch (error) {
         console.error("Error in registerUser:", error);
@@ -111,15 +125,8 @@ export const verifyEmail = asyncHandler(async(req, res) => {
             where: { userId }
         });
 
-        const token = jwt.sign({
-                    userId: newUser.id,
-                    email: newUser.email,
-                    role: newUser.role,
-             }, process.env.JWT_SECRET, { expiresIn: '1h'}
-        )
         res.status(200).json({ 
             message: "Email verified successfully.Now, please verify 2FA then You can now login to your account",
-            Token: token
 
         });   
     } catch (error) {
@@ -157,16 +164,29 @@ export const loginUser = asyncHandler(async(req, res) => {
             return res.status(400).json({ message: "Invalid email or password" });
         }
 
-        const token = jwt.sign({ 
-            userId: user.id,
-            email: user.email,
-            role: user.role,
-            companyId: user.companyId,
-         }, process.env.JWT_SECRET, { expiresIn: '7d'}
-         );
+        // const token = jwt.sign({ 
+        //     userId: user.id,
+        //     email: user.email,
+        //     role: user.role,
+        //     companyId: user.companyId,
+        //  }, process.env.JWT_SECRET, { expiresIn: '7d'}
+        //  );
+        
+        const { accessToken, refreshToken } = generateTokens(user);
+
+        await prisma.refreshToken.create({
+                 data: {
+                   token: refreshToken,
+                  userId: user.id,
+               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              },
+        });
+
 
         res.status(200).json({ 
             message: "Login successful",
+            accessToken,
+            refreshToken,
             user:{
                 firstName: user.firstName,
                 lastName: user.lastName,
@@ -177,7 +197,7 @@ export const loginUser = asyncHandler(async(req, res) => {
                 isVerified: user.isVerified,
                 createdAt: user.createdAt,
             },
-            Token: token
+            //Token: token
          });
 
     } catch (error) {
@@ -270,7 +290,7 @@ export const forgotPass = asyncHandler(async(req, res) => {
 
         res.status(200).json({ 
             message: "We have sent a password reset OTP to your email. Please check your inbox." 
-            ,Token: token
+            ,TemporaryToken: token
         });
 
     } catch (error) {
@@ -389,4 +409,67 @@ export const resetPassword = asyncHandler(async(req, res) => {
         console.error("Error in resetting password:", error);
         return res.status(500).json({ message: "Internal Server error", error: error.message });
     }
-})
+});
+
+//refresh the token
+export const refreshToken = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).json({ message: "Refresh token required" });
+
+  const stored = await prisma.refreshToken.findUnique({ where: { token: refreshToken } });
+  if (!stored) return res.status(403).json({ message: "Invalid refresh token" });
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+    const user = await prisma.user.findUnique({ 
+        where: { 
+            id: decoded.userId 
+        } 
+    });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
+
+    await prisma.refreshToken.update({
+      where: { token: refreshToken },
+      data: {
+        token: newRefreshToken,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    res.json({ accessToken, refreshToken: newRefreshToken });
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired refresh token" });
+  }
+});
+
+export const logout = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+   
+    await prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
+
+    return res.status(200).json({
+      message: "Logout successful",
+    });
+  } catch (error) {
+    console.error("Error in logout:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+});

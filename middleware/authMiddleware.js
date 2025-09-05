@@ -32,7 +32,7 @@ export const protectedRoutes = asyncHandler(async (req, res, next) => {
       next();
     } catch (error) {
       console.error('Auth Middleware Error:', error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
+      res.status(401).json({ message: 'Not authorized, token failed, please refresh' });
     }
   }
 

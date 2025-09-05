@@ -36,6 +36,7 @@ model User {
   otp          Otp?
   companyId    Int?
   company      Company?     @relation(fields: [companyId], references: [id])
+  refreshTokens RefreshToken[]
 }
 
 model Otp {
@@ -44,6 +45,15 @@ model Otp {
   expiresAt DateTime
   userId    Int      @unique
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 model Company {

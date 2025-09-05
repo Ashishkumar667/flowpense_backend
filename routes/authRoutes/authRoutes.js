@@ -6,7 +6,9 @@ import {
     verifyEmail,
     forgotPass,
     verifyForgotPassOtp,
-    resetPassword
+    resetPassword,
+    refreshToken,
+    logout
 
 } from '../../controllers/auth/auth.controller.js';
 
@@ -27,5 +29,10 @@ router.post('/forgot-password', forgotPass);
 router.post('/verify/forgot-pass-otp',protectedRoutes, verifyForgotPassOtp);
 
 router.post('/reset-password',protectedRoutes, resetPassword);
+
+router.post('/refreshToken', refreshToken);
+
+router.post('/logout', protectedRoutes, logout);
+
 
 export default router;
