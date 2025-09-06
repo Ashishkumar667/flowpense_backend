@@ -52,14 +52,6 @@ export const registerUser = asyncHandler(async (req, res) => {
         
      });
     
-
-    //  const token = jwt.sign({ 
-    //     userId: newUser.id,
-    //     email: newUser.email,
-    //     role: newUser.role,
-    //     companyId: newUser.companyId,
-    //  }, process.env.JWT_SECRET, { expiresIn: '1h'}
-    //  );
     const { accessToken, refreshToken } = generateTokens(newUser);
 
     // Save refresh token
@@ -164,14 +156,6 @@ export const loginUser = asyncHandler(async(req, res) => {
             return res.status(400).json({ message: "Invalid email or password" });
         }
 
-        // const token = jwt.sign({ 
-        //     userId: user.id,
-        //     email: user.email,
-        //     role: user.role,
-        //     companyId: user.companyId,
-        //  }, process.env.JWT_SECRET, { expiresIn: '7d'}
-        //  );
-        
         const { accessToken, refreshToken } = generateTokens(user);
 
         await prisma.refreshToken.create({
