@@ -7,7 +7,8 @@ import asyncHandler from 'express-async-handler';
 import { 
     verificationEmailTemplate, 
     passwordResetEmailTemplate,
-    resetpasswordConfirmationEmailTemplate
+    resetpasswordConfirmationEmailTemplate,
+    loginOtpEmailTemplate
 } from '../../utils/email/emailtemplate/email.template.js';
 import {
     generateTokens
@@ -127,6 +128,48 @@ export const verifyEmail = asyncHandler(async(req, res) => {
     }
 });
 
+export const resendVerificationOtp = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, firstName: true, email: true, isVerified: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // valid for 10 mins
+
+    await prisma.otp.upsert({
+      where: { userId: user.id },
+      update: { code: otpCode, expiresAt: otpExpiry },
+      create: { userId: user.id, code: otpCode, expiresAt: otpExpiry },
+    });
+
+    // send email again
+    await verificationEmailTemplate(user.email, user.firstName, otpCode);
+
+    return res.status(200).json({
+      message: "New verification OTP sent to your email",
+    });
+  } catch (error) {
+    console.error("Error in resendVerificationOtp:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal Server error", error: error.message });
+  }
+});
+
+
 
 export const loginUser = asyncHandler(async(req, res) => {
     try {
@@ -155,6 +198,108 @@ export const loginUser = asyncHandler(async(req, res) => {
         if(!isPasswordValid){
             return res.status(400).json({ message: "Invalid email or password" });
         }
+        
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();  //valid for 10 minutes
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+      await prisma.otp.create({
+        data: {
+            userId: user.id,
+            code: otpCode,
+            expiresAt: otpExpiry,
+        }
+    });
+
+    await loginOtpEmailTemplate(email, user.firstName, otpCode);
+    console.log("EMail sent to:", email);
+
+        // const { accessToken, refreshToken } = generateTokens(user);
+
+        // await prisma.refreshToken.create({
+        //          data: {
+        //            token: refreshToken,
+        //           userId: user.id,
+        //        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        //       },
+        // });
+        const token = jwt.sign(
+            {
+              userId: user.id,
+              email: user.email,
+              role: user.role,
+              companyId: user.companyId,
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: "10min" } 
+          );
+
+        res.status(200).json({ 
+            message: "successfull.Now, verify otp to login",
+            // accessToken,
+            // refreshToken,
+            // user:{
+            //     firstName: user.firstName,
+            //     lastName: user.lastName,
+            //     email: user.email,
+            //     mobile: user.mobile,
+            //     role: user.role,
+            //     companyId: user.companyId,
+            //     isVerified: user.isVerified,
+            //     createdAt: user.createdAt,
+            // },
+            Token: token
+         });
+
+    } catch (error) {
+        console.error("Error in Login:", error);
+        return res.status(500).json({ message: "Internal Server error", error: error.message });
+    }
+});
+
+export const loginUserOTP = asyncHandler(async(req, res) => {
+    try {
+        const userId = req.user.id;
+        const { otpCode } = req.body;
+
+        if(!otpCode){
+            return res.status(400).json({
+                message:"Please provide otp"
+            })
+        }
+
+            const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { 
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  mobile: true,
+                  role: true,
+                  isVerified: true,
+                  createdAt: true, 
+            
+            }
+        }); 
+
+        const record = await prisma.otp.findFirst({
+            where: {
+                userId,
+                code : otpCode,
+                expiresAt: {
+                    gt: new Date()
+                }
+            }
+        });
+
+        if(!record){
+            return res.status(400).json({ message: "Invalid or expired OTP code" });
+        }
+
+
+        await prisma.otp.delete({
+            where: { userId }
+        });
 
         const { accessToken, refreshToken } = generateTokens(user);
 
@@ -167,8 +312,8 @@ export const loginUser = asyncHandler(async(req, res) => {
         });
 
 
-        res.status(200).json({ 
-            message: "Login successful",
+        return res.status(200).json({ 
+            message: "Login sucessfully",
             accessToken,
             refreshToken,
             user:{
@@ -181,15 +326,13 @@ export const loginUser = asyncHandler(async(req, res) => {
                 isVerified: user.isVerified,
                 createdAt: user.createdAt,
             },
-            //Token: token
+            
          });
-
-    } catch (error) {
+    } catch(error) {
         console.error("Error in Login:", error);
         return res.status(500).json({ message: "Internal Server error", error: error.message });
     }
-});
-
+})
 export const getUserProfile = asyncHandler(async(req, res) => {
     try {
         

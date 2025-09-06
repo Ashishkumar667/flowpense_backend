@@ -11,7 +11,7 @@ export const generateTokens = (user) => {
       companyId: user.companyId,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "2h" } 
+    { expiresIn: "1h" } 
   );
 
   const refreshToken = jwt.sign(
