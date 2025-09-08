@@ -10,6 +10,7 @@ import {
     refreshToken,
     loginUserOTP,
     resendVerificationOtp,
+    resendLoginOtp,
     logout
 
 } from '../../controllers/auth/auth.controller.js';
@@ -39,5 +40,7 @@ router.post('/logout', protectedRoutes, logout);
 router.post('/login-otp', protectedRoutes, loginUserOTP);
 
 router.post('/resend-emailVerif/otp', protectedRoutes, resendVerificationOtp);
+
+router.post('/resend/otp', protectedRoutes, resendLoginOtp );
 
 export default router;

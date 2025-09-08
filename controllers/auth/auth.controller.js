@@ -230,7 +230,7 @@ export const loginUser = asyncHandler(async(req, res) => {
               companyId: user.companyId,
             },
             process.env.JWT_SECRET,
-            { expiresIn: "10min" } 
+            { expiresIn: "20min" } 
           );
 
         res.status(200).json({ 
@@ -600,3 +600,56 @@ export const logout = asyncHandler(async (req, res) => {
       .json({ message: "Internal server error", error: error.message });
   }
 });
+
+
+ const generateOtp = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+
+export const resendLoginOtp = asyncHandler(async(req, res) => {
+    try {
+
+        const userId = req.user.id;
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        console.log("user", user); //debug
+
+        if (!user) {
+              return res.status(404).json({ message: "User not found" });
+        }
+
+        const otpCode = generateOtp();
+        const otpExpiry = new Date(Date.now() + 60 * 60 * 1000);
+      await prisma.otp.upsert({
+            where: {
+                userId: user.id, 
+            },
+            update: {
+                code: otpCode,      
+                expiresAt: otpExpiry,
+            },
+            create: {
+                userId: user.id, 
+                code: otpCode,
+                expiresAt: otpExpiry,
+            },
+        });
+
+    await loginOtpEmailTemplate(user.email, user.firstName, otpCode);
+    console.log("EMail sent to:", user.email);
+
+    return res.status(200).json({
+        message:"OTP Resent successfully",
+    })
+
+    } catch (error) {
+         console.error("Error in resend Otp:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  
+    }
+})
