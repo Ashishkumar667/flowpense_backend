@@ -13,6 +13,7 @@ export const generateTokens = (user) => {
     process.env.JWT_SECRET,
     { expiresIn: "1h" } 
   );
+//console.log("companyid", user.companyId);
 
   const refreshToken = jwt.sign(
     { userId: user.id },

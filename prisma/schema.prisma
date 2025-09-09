@@ -92,6 +92,8 @@ model WalletLedger {
   amount       Float
   currency     String   @default("NGN")
   balanceAfter Float
+  status       String  @default("pending")
+  receipt_url  String?
   createdAt    DateTime @default(now())
 
   company     Company   @relation(fields: [companyId], references: [id])

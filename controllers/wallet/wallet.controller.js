@@ -19,11 +19,11 @@ export const topupWallet = asyncHandler(async (req, res) => {
     if (req.user.role !== "ADMIN" && req.user.role !== "SUPERADMIN") {
       return res.status(403).json({ error: "Only admins can top up the wallet" });
     }
-
     
     if (req.user.companyId !== parseInt(companyId)) {
       return res.status(403).json({ error: "You cannot top up another company's wallet" });
     }
+    
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
@@ -80,13 +80,20 @@ export const stripeWebhook = asyncHandler(async (req, res) => {
   //   console.log(`Wallet credited (PI) for company ${companyId} with ${amount} ${currency}`);
   // }
 
-  if (event.type === "checkout.session.completed") {
+   if (event.type === "checkout.session.completed") {
+    const paymentIntent = event.data.object;
     const session = event.data.object;
     const companyId = parseInt(session.metadata.companyId);
     const amount = session.amount_total / 100;
     const currency = session.currency;
+    const status = "success";
 
-    await topupWalletService({ companyId, amount, currency });
+  const charge = paymentIntent.charges?.data?.[0];
+  const receipt_url = charge?.receipt_url || null;
+  console.log("receipt", receipt_url);
+
+   
+    await topupWalletService({ companyId, amount, currency, status, receipt_url });
     console.log(`Wallet credited (CS) for company ${companyId} with ${amount} ${currency}`);
   }
 

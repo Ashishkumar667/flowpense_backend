@@ -1,6 +1,6 @@
 import prisma from "../../config/db.js";
 
-export const topupWalletService = async ({ companyId, amount, currency }) => {
+export const topupWalletService = async ({ companyId, amount, currency, status, receipt_url }) => {
 
   const company = await prisma.company.findUnique({
     where: { id: companyId },
@@ -23,6 +23,8 @@ export const topupWalletService = async ({ companyId, amount, currency }) => {
       amount,
       currency: currency || "NGN",
       balanceAfter: newBalance,
+      status,
+      receipt_url
     },
   });
 
