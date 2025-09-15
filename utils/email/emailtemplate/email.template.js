@@ -50,7 +50,7 @@ export const resetpasswordConfirmationEmailTemplate = asyncHandler(async(email, 
 });
 
 export const loginOtpEmailTemplate = asyncHandler(async(email, firstName, otp) => {
-   const subject = "Password Reset Request - Flowpense";
+   const subject = "Login OTP - Flowpense";
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2 style="color: #333;">Login -OTP</h2>

@@ -189,9 +189,9 @@ export const loginUser = asyncHandler(async(req, res) => {
             return res.status(400).json({ message: "Please verify your email to login" });
         }
 
-        if(!user.mfaEnabled){
-            return res.status(400).json({ message: "Please enable and verify 2FA to login" });
-        }
+        // if(!user.mfaEnabled){
+        //     return res.status(400).json({ message: "Please enable and verify 2FA to login" });
+        // }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
@@ -367,11 +367,9 @@ export const getUserProfile = asyncHandler(async(req, res) => {
         return res.status(500).json({ message: "Internal Server error", error: error.message });
     }
 });
-
-
+       
 export const forgotPass = asyncHandler(async(req, res) => {
     try {
-        
         const { email } = req.body;
 
         if(!email){
@@ -381,14 +379,13 @@ export const forgotPass = asyncHandler(async(req, res) => {
         const user = await prisma.user.findUnique({
             where: { email: email },
             select: { 
-                  id: true,
+                  id: true,       
                   firstName: true,
                   lastName: true,
                   email: true,
                   mobile: true,
                   isVerified: true,
-                  createdAt: true, 
-            
+                  createdAt: true,       
             }
         });
 
@@ -396,11 +393,11 @@ export const forgotPass = asyncHandler(async(req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
-        const otpExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiry = new Date(Date.now() + 60 * 60 * 1000); 
 
         await prisma.otp.upsert({
-            where: { userId: user.id },
+            where: { userId: user.id }, 
             update: { code: otp, expiresAt: otpExpiry },
             create: { userId: user.id, code: otp, expiresAt: otpExpiry }
         }); 
@@ -412,7 +409,7 @@ export const forgotPass = asyncHandler(async(req, res) => {
             email: user.email,
         }, process.env.JWT_SECRET, 
         { expiresIn: '1h'}
-        
+              
     );
 
         res.status(200).json({ 
