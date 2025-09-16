@@ -202,12 +202,17 @@ export const loginUser = asyncHandler(async(req, res) => {
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();  //valid for 10 minutes
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-      await prisma.otp.create({
-        data: {
-            userId: user.id,
-            code: otpCode,
-            expiresAt: otpExpiry,
-        }
+      await prisma.otp.upsert({
+          where: { userId: user.id },
+             update: {
+               code: otpCode,
+               expiresAt: otpExpiry,
+            },
+             create: {
+               userId: user.id,
+               code: otpCode,
+               expiresAt: otpExpiry,
+        },
     });
 
     await loginOtpEmailTemplate(email, user.firstName, otpCode);
