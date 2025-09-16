@@ -252,6 +252,7 @@ export const loginUser = asyncHandler(async(req, res) => {
             //     isVerified: user.isVerified,
             //     createdAt: user.createdAt,
             // },
+            mfaStatus: user.mfaEnabled,
             Token: token
          });
 
