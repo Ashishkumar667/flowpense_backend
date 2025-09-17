@@ -34,6 +34,7 @@ export const protectedRoutes = asyncHandler(async (req, res, next) => {
         companyId: decoded.companyId,
         mfaEnabled: user.mfaEnabled, 
       };
+      console.log("User from DB:", user);
 
       const allowedWithoutMfa = [
         "/generate-secret",

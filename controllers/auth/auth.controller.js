@@ -282,6 +282,7 @@ export const loginUserOTP = asyncHandler(async(req, res) => {
                   email: true,
                   mobile: true,
                   role: true,
+                  companyId: true,
                   isVerified: true,
                   createdAt: true, 
             
@@ -338,7 +339,9 @@ export const loginUserOTP = asyncHandler(async(req, res) => {
         console.error("Error in Login:", error);
         return res.status(500).json({ message: "Internal Server error", error: error.message });
     }
-})
+});
+
+
 export const getUserProfile = asyncHandler(async(req, res) => {
     try {
         
