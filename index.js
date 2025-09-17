@@ -6,6 +6,7 @@ import mfaRoutes from './routes/mfaRoutes/2faroutes.js';
 import companyRoutes from './routes/companyRoutes/company.routes.js';
 import walletRoutes from './routes/walletRoutes/wallet.routes.js';
 import { stripeWebhook } from './controllers/wallet/wallet.controller.js';
+import googleSignInRoutes from './routes/googleSignin/google.signin.js';
 const app = express();
 
 const port = process.env.PORT || 3000;
@@ -28,6 +29,8 @@ app.use('/api/mfa', mfaRoutes);
 app.use('/api/companies', companyRoutes);
 
 app.use('/wallet', walletRoutes);
+
+app.use('/auth', googleSignInRoutes);
 
 app.get('/', (req, res) => {
     res.json({message: "Welcome to Flowpense API"});
