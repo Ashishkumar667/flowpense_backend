@@ -4,7 +4,9 @@ import {
     googleMobileLogin,
 } from '../../controllers/mobile/googleSignIn.js';
 import { 
-    googleWebSignup } from '../../controllers/mobile/google.login.js';
+    googleWebSignup 
+  } from '../../controllers/mobile/google.login.js';
+import axios from 'axios';
 const router = express.Router();
 
 router.post('/google-mobile', googleMobileLogin);
@@ -14,6 +16,8 @@ router.post('/google', googleWebSignup);
 
 router.get('/google/callback', async(req,res)=>{
   const { code } = req.query;
+    console.log("Received callback code:", code);
+  console.log("BACKEND_URL:", process.env.BACKEND_URL);
 
   if(!code){
      return res.status(400).json({message : 'Code is missing'});
@@ -22,6 +26,7 @@ router.get('/google/callback', async(req,res)=>{
   try {
     
     const response = await axios.post(`${process.env.BACKEND_URL}/auth/google`, {code});
+     console.log("Google auth response:", response.data);
 
      const { token, user } = response.data;
 

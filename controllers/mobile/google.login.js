@@ -22,6 +22,7 @@ const generateJwt = (user) =>
 
 export const googleWebSignup = async (req, res) => {
   const { code } = req.body;
+  console.log("Received code:", code);
 
   if (!code) {
     return res.status(400).json({ message: "Authorization code missing" });
@@ -35,11 +36,16 @@ export const googleWebSignup = async (req, res) => {
     params.append("grant_type", "authorization_code");
     params.append("code", code);
 
+    console.log("Exchanging code for tokens...");
+    console.log("Token request params:", params.toString());
+
     const tokenResponse = await axios.post(
       "https://oauth2.googleapis.com/token",
       params.toString(),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
+
+    console.log("Token response data:", tokenResponse.data);
 
     const { id_token, access_token, refresh_token } = tokenResponse.data;
 
@@ -53,7 +59,8 @@ export const googleWebSignup = async (req, res) => {
 
     
     let user = await prisma.user.findUnique({ where: { email } });
-
+     console.log("User lookup result:", user);
+     
     if (!user) {
       console.log(`Creating new Google user: ${email}`);
       const [firstName, ...lastNameParts] = name.split(" ");
