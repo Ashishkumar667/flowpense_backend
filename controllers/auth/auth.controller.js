@@ -658,4 +658,28 @@ export const resendLoginOtp = asyncHandler(async(req, res) => {
       .json({ message: "Internal server error", error: error.message });
   
     }
-})
+});
+
+export const deleteAcccount = asynchHandler(async(req, res) => {
+    try {
+        const UserId = req.user.id;
+
+        const user = await prisma.user.findUnique({
+            where: { id: UserId }      
+        });
+
+        if(!user){
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        await prisma.user.delete({
+            where: { id: UserId }
+        });
+
+        res.status(200).json({ message: "Account deleted successfully" });
+        
+    } catch(error) {
+        console.error("Error in deleting account:", error);
+        return res.status(500).json({ message: "Internal Server error", error: error.message });
+   }
+});
