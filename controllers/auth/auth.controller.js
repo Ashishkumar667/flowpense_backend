@@ -660,7 +660,7 @@ export const resendLoginOtp = asyncHandler(async(req, res) => {
     }
 });
 
-export const deleteAcccount = asynchHandler(async(req, res) => {
+export const deleteAcccount = asyncHandler(async(req, res) => {
     try {
         const UserId = req.user.id;
 
