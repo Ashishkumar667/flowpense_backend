@@ -18,6 +18,7 @@ dotenv.config();
 export const registerUser = asyncHandler(async (req, res) => {
    try {
      const { firstName, lastName, email, password, confirmPassword, mobileNumber, role } = req.body;
+     console.log("Register User Data:", req.body); 
  
      if(!firstName || !email || !password || !confirmPassword || !mobileNumber || !role){
          return res.status(400).json({ message: "All fields are required" });
