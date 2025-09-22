@@ -12,8 +12,8 @@ import {
     resendVerificationOtp,
     resendLoginOtp,
     logout,
-    deleteAcccount
-
+    deleteAcccount,
+    updateProfile
 } from '../../controllers/auth/auth.controller.js';
 
 import { protectedRoutes } from '../../middleware/authMiddleware.js';
@@ -45,5 +45,7 @@ router.post('/resend-emailVerif/otp', protectedRoutes, resendVerificationOtp);
 router.post('/resend/otp', protectedRoutes, resendLoginOtp );
 
 router.delete('/delete-account', protectedRoutes, deleteAcccount);
+
+router.put('/update/userprofile', protectedRoutes, updateProfile);
 
 export default router;
