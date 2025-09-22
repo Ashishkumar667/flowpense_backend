@@ -17,6 +17,7 @@ dotenv.config();
 
 export const registerUser = asyncHandler(async (req, res) => {
    try {
+    console.log("Register User Request Body:", req.body);
      const { firstName, lastName, email, password, confirmPassword, mobileNumber, role } = req.body;
      console.log("Register User Data:", req.body); 
  
