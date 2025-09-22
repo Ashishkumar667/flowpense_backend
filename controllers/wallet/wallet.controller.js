@@ -23,6 +23,7 @@ export const topupWallet = asyncHandler(async (req, res) => {
       return res.status(403).json({ error: "You cannot top up another company's wallet" });
     }
 
+    console.log("Initiating Paystack Transaction for:", { companyId, amount, email, currency });
     const response = await paystack.post("/transaction/initialize", {
       email,
       amount: Math.round(amount * 100),
@@ -30,6 +31,7 @@ export const topupWallet = asyncHandler(async (req, res) => {
       metadata: { companyId: companyId.toString() },
       callback_url: `${process.env.CLIENT_URL}/payment/callback`,
     });
+    console.log("Paystack Initialization Response:", response.data);
 
     return res.status(200).json({
       success: true,
