@@ -57,7 +57,7 @@ export const loginOtpEmailTemplate = asyncHandler(async(email, firstName, otp) =
         <p>Dear ${firstName},</p>
         <p>We received a request for login from your account.Please use this <strong>OTP</strong> to login:</p>
         <h3 style="background-color: #f4f4f4; padding: 10px; border-radius: 5px; display: inline-block;">${otp}</h3>
-        <p>This OTP will expire in 10 MINUTES. If you did not request a password reset, please ignore this email.</p>
+        <p>This OTP will expire in 10 MINUTES. If you did not request this, please ignore this email.</p>
         <p>Best regards,<br/><strong>The Flowpense Team</strong></p>
       </div>
     `;

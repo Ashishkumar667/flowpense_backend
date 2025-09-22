@@ -10,10 +10,7 @@ import googleSignInRoutes from './routes/googleSignin/google.signin.js';
 import cors from 'cors';
 const app = express();
 
-const allowedOrigins =[
-  process.env.FRONTEND_URL,
-  "http://localhost:3000",
-]
+
 const port = process.env.PORT || 3000;
 
 //for webhook
@@ -22,6 +19,14 @@ app.post(
   express.raw({ type: "application/json" }),
   paystackwebhook
 );
+
+app.use(express.json());
+
+
+const allowedOrigins =[
+  process.env.FRONTEND_URL,
+  "http://localhost:3000",
+]  
 
 const corsOptions = {
  origin: function (origin, callback) {
@@ -40,8 +45,6 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions));
-
-app.use(express.json());
 
 
 app.use('/api/auth', authRoutes);
