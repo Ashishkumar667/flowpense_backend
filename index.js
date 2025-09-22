@@ -7,8 +7,13 @@ import companyRoutes from './routes/companyRoutes/company.routes.js';
 import walletRoutes from './routes/walletRoutes/wallet.routes.js';
 import { paystackwebhook } from './controllers/wallet/wallet.controller.js';
 import googleSignInRoutes from './routes/googleSignin/google.signin.js';
+import cors from 'cors';
 const app = express();
 
+const allowedOrigins =[
+  process.env.FRONTEND_URL,
+  "http://localhost:3000",
+]
 const port = process.env.PORT || 3000;
 
 //for webhook
@@ -18,6 +23,17 @@ app.post(
   paystackwebhook
 );
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  }
+}
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
