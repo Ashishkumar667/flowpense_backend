@@ -38,6 +38,15 @@ export const uploadCompanyKyc = asyncHandler(async(req, res) => {
     if (!companyId || !files?.length || !adminBvn) {
       return res.status(400).json({ error: "Missing KYC fields" });
     };
+    //console.log("companyId", companyId);
+
+    const parsedcompanyid = parseInt(req.body.companyId,10 );
+
+    //console.log("companyid", parsedcompanyid);
+
+    if (isNaN(parsedcompanyid)) {
+      return res.status(400).json({ error: "Invalid company ID" });
+    }
 
     const docs = files.map(file => ({
       filename: file.originalname,
@@ -45,8 +54,13 @@ export const uploadCompanyKyc = asyncHandler(async(req, res) => {
       mimetype: file.mimetype
     }));
     
+    console.log("docs", docs);
 
-    const kyc = await uploadCompanyKycService({ companyId, docs, adminBvn });
+    const kyc = await uploadCompanyKycService({ 
+      companyId: parsedcompanyid, 
+      docs, 
+      adminBvn 
+    });
 
     res.status(200).json({ success: true, kyc });
   } catch (err) {
