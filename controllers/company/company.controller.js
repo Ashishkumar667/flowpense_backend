@@ -31,13 +31,19 @@ export const registerCompany = asyncHandler(async(req, res) => {
 
 export const uploadCompanyKyc = asyncHandler(async(req, res) => {
  try {
-    const { companyId, docs, adminBvn } = req.body;
-    console.log("kyc details",companyId, adminBvn, docs);
+    const { companyId, adminBvn } = req.body;
+    const files = req.files;
+    console.log("kyc details",companyId, adminBvn, files);
 
-    if (!companyId || !docs || !adminBvn) {
+    if (!companyId || !files?.length || !adminBvn) {
       return res.status(400).json({ error: "Missing KYC fields" });
-    }
+    };
 
+    const docs = files.map(file => ({
+      filename: file.originalname,
+      path: file.path,
+      mimetype: file.mimetype
+    }));
     
 
     const kyc = await uploadCompanyKycService({ companyId, docs, adminBvn });

@@ -5,14 +5,20 @@ import {
     getCompanyDetails,
     updateCompany
 } from '../../controllers/company/company.controller.js';
-import { protectedRoutes } from '../../middleware/authMiddleware.js';
+import { 
+    protectedRoutes,
+ } from '../../middleware/authMiddleware.js';
+
+ import {     
+    upload
+ } from '../../middleware/multer.js';
 
 const router = express.Router();
 
 
 router.post('/register', protectedRoutes, registerCompany);
 
-router.post('/upload-kyc', protectedRoutes, uploadCompanyKyc);
+router.post('/upload-kyc',upload.array("docs", 5), protectedRoutes, uploadCompanyKyc);
 
 router.get('/:companyId', getCompanyDetails);
 
