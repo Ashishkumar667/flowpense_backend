@@ -176,6 +176,7 @@ export const resendVerificationOtp = asyncHandler(async (req, res) => {
 export const loginUser = asyncHandler(async(req, res) => {
     try {
         const { email, password } = req.body;
+        //console.log("Login Request Body:", req.body);
 
         if(!email || !password){
             return res.status(400).json({ message: "All fields are required" });
@@ -217,6 +218,7 @@ export const loginUser = asyncHandler(async(req, res) => {
         },
     });
 
+    console.log("Sending OTP to email:", email);
     await loginOtpEmailTemplate(email, user.firstName, otpCode);
     console.log("EMail sent to:", email);
 
