@@ -689,6 +689,7 @@ export const deleteAcccount = asyncHandler(async(req, res) => {
 export const updateProfile = asyncHandler(async(req, res) =>{
     try {
         const userId = req.user.id;
+        //console.log("UserId from token:", userId); 
         const { firstName, lastName, mobile } = req.body;
 
         if(!firstName || !lastName || !mobile){
@@ -697,6 +698,8 @@ export const updateProfile = asyncHandler(async(req, res) =>{
         const user = await prisma.user.findUnique({
             where: { id: userId }      
         });
+
+        //console.log("User", user);
         if(!user){
             return res.status(404).json({ message: "User not found" });
         }
