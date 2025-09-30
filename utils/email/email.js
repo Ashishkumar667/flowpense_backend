@@ -34,11 +34,11 @@ const oAuth2Client = new google.auth.OAuth2(
 );
 
 oAuth2Client.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
+const accessToken = await oAuth2Client.getAccessToken();
 
 export const sendEmail = async (to, subject, html) => {
   try {
-    const accessToken = await oAuth2Client.getAccessToken();
-
+      
     const transporter = nodemailer.createTransport({
         // host: "smtp.gmail.com",
         // port: 465,
@@ -54,14 +54,14 @@ export const sendEmail = async (to, subject, html) => {
       },
     });
 
-
+    console.loh("transporter",transporter);
     const mailOptions = {
       from: `"Flowpense" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
     };
-
+    console.log("mailoptions", mailOptions);
     const result = await transporter.sendMail(mailOptions);
     console.log("✅ Email sent:", result.messageId);
 
