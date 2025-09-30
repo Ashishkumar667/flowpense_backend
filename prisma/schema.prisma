@@ -38,6 +38,8 @@ model User {
   companyId    Int?
   company      Company?     @relation(fields: [companyId], references: [id])
   refreshTokens RefreshToken[]
+  expenses      CardExpense[]
+  teams         TeamEmployee[]
 }
 
 model Otp {
@@ -71,6 +73,8 @@ model Company {
   users        User[]
   companyKyc   CompanyKyc?
   walletLedger WalletLedger[]
+  cards         Card[]
+  teams        Team[]
 }
 
 model CompanyKyc {
@@ -97,4 +101,66 @@ model WalletLedger {
   createdAt    DateTime @default(now())
 
   company     Company   @relation(fields: [companyId], references: [id])
+}
+
+model Card {
+  id          Int       @id @default(autoincrement())
+  CardType    String    @default("virtual card")
+  CardNumber  String
+  CardName    String
+  CardHolder  String[]
+  Approver    String[]
+  TeamName    String
+  DailySpendLimit Int 
+  WeeklySpendLimit  Int
+  MonthlyLimit      Int
+  PerTransactionLimit  Int
+  CardFunding          Int
+  status        String    @default("Active")
+  BlockedCategory   String[]
+  companyId         Int
+  company           Company    @relation(fields: [companyId], references: [id])
+   expenses             CardExpense[]
+}
+
+model CardExpense {
+    id          Int        @id @default(autoincrement())
+    merchant    String
+    category    String
+    Amount      Int
+    currency    String
+    status      String     @default("Pending")
+    createdAt   DateTime    @default(now())
+    cardId      Int
+    card        Card        @relation(fields: [cardId], references: [id])
+    userId      Int
+    user        User        @relation(fields: [userId], references: [id])
+}
+
+model Team {
+  id           Int         @id @default(autoincrement())
+  TeamName     String      
+  Description  String
+  MonthlyBudget Int
+  companyId     Int
+  TotalMembers  Int        @default(0)
+  Members       TeamEmployee[]
+  company       Company    @relation(fields: [companyId], references: [id]) 
+  createdAt     DateTime   @default(now())
+}
+
+model TeamEmployee {
+  id         Int     @id @default(autoincrement())
+  teamId     Int
+  team       Team    @relation(fields: [teamId], references: [id])
+
+  userId     Int
+  user       User    @relation(fields: [userId], references: [id])
+
+  department String
+  jobTitle   String
+  fullName   String
+  email      String
+
+  joinedAt   DateTime @default(now())
 }

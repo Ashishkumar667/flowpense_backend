@@ -7,6 +7,11 @@ import companyRoutes from './routes/companyRoutes/company.routes.js';
 import walletRoutes from './routes/walletRoutes/wallet.routes.js';
 import { paystackwebhook } from './controllers/wallet/wallet.controller.js';
 import googleSignInRoutes from './routes/googleSignin/google.signin.js';
+import cardManagementRoutes from './routes/cardManagementRoutes/card.management.routes.js';
+import expenseRoutes from './routes/ExpenseRoutes/expense.routes.js';
+import fundRoutes from './routes/fundingRoutes/fund.routes.js';
+import approvalRoutes from './routes/ApprovalRoutes/approve.routes.js';
+import teamMemberRoutes from './routes/TeamMemberRoutes/team.member.js';
 import cors from 'cors';
 const app = express();
 
@@ -51,6 +56,16 @@ app.use(cors(corsOptions));
 app.use('/api/auth', authRoutes);
 
 app.use('/api/mfa', mfaRoutes);
+
+app.use('/api/cards', cardManagementRoutes);
+
+app.use('/api/expenses', expenseRoutes);
+
+app.use('/api/approvals', approvalRoutes);
+
+app.use('/api/funds', fundRoutes);
+
+app.use('/api/teams', teamMemberRoutes);
 
 app.use('/api/companies', companyRoutes);
 

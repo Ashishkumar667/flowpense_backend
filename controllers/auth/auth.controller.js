@@ -718,4 +718,88 @@ export const updateProfile = asyncHandler(async(req, res) =>{
         console.error("Error in updating user account:", error);
         return res.status(500).json({ message: "Internal Server error", error: error.message });
     }
-})
+});
+
+export const changePassword = asyncHandler(async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            return res.status(400).json({
+                message: "All fields are required"
+            });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+        if (!isCurrentPasswordValid) {
+            return res.status(400).json({ message: "Invalid current password" });
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            return res.status(400).json({
+                message: "Passwords do not match"
+            });
+        }
+
+        if (!validatePassword(newPassword)) {
+            return res.status(400).json({ message: "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, and one number" });
+        }
+
+        const newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                password: newHashedPassword
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Password updated successfully"
+        });
+
+    } catch (error) {
+        console.error("Error in updating user account password:", error);
+        return res.status(500).json({ message: "Internal Server error", error: error.message });
+    }
+});
+
+export const deleteAcc = asyncHandler(async(req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await prisma.user.findUnique({
+            where:{ id : userId},
+        });
+
+        if(!user){
+           return res.status(400).json({
+                message:"User not found"
+            })
+        };
+
+        await prisma.user.delete({
+            where: { id: userId }
+        })
+
+        res.status(200).json({
+            message:"Account deleted successfully"
+        });
+        
+    } catch (error) {
+        console.error("Error in deleting user account password:", error);
+        return res.status(500).json({ message: "Internal Server error", error: error.message });
+    }
+});

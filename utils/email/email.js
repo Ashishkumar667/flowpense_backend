@@ -68,3 +68,14 @@ export const sendEmail = async (to, subject, html) => {
     throw new Error("Failed to send email");
   }
 };
+
+// import sgMail from "@sendgrid/mail";
+
+// sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// await sgMail.send({
+//   to,
+//   from:  `"Flowpense" <${process.env.EMAIL_USER}>`,
+//   subject,
+//   html,
+// });
