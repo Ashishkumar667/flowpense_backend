@@ -54,7 +54,7 @@ export const sendEmail = async (to, subject, html) => {
       },
     });
 
-    console.loh("transporter",transporter);
+    console.log("transporter",transporter);
     const mailOptions = {
       from: `"Flowpense" <${process.env.EMAIL_USER}>`,
       to,
