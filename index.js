@@ -12,6 +12,7 @@ import expenseRoutes from './routes/ExpenseRoutes/expense.routes.js';
 import fundRoutes from './routes/fundingRoutes/fund.routes.js';
 import approvalRoutes from './routes/ApprovalRoutes/approve.routes.js';
 import teamMemberRoutes from './routes/TeamMemberRoutes/team.member.js';
+import userKYCRoutes from './routes/userKYCRoutes/user.kyc.routes.js';
 import cors from 'cors';
 const app = express();
 
@@ -60,6 +61,8 @@ app.use('/api/mfa', mfaRoutes);
 app.use('/api/cards', cardManagementRoutes);
 
 app.use('/api/expenses', expenseRoutes);
+
+app.use('/api/userkyc', userKYCRoutes);
 
 app.use('/api/approvals', approvalRoutes);
 

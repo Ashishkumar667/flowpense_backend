@@ -40,6 +40,7 @@ model User {
   refreshTokens RefreshToken[]
   expenses      CardExpense[]
   teams         TeamEmployee[]
+  userKyc       UserKyc[]
 }
 
 model Otp {
@@ -163,4 +164,14 @@ model TeamEmployee {
   email      String
 
   joinedAt   DateTime @default(now())
+}
+
+model UserKyc {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
+  country   String   @default("Nigeria")
+  docs      Json     // [{filename, path, mimetype, size}]
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
 }
