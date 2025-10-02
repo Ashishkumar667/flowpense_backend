@@ -13,6 +13,8 @@ import fundRoutes from './routes/fundingRoutes/fund.routes.js';
 import approvalRoutes from './routes/ApprovalRoutes/approve.routes.js';
 import teamMemberRoutes from './routes/TeamMemberRoutes/team.member.js';
 import userKYCRoutes from './routes/userKYCRoutes/user.kyc.routes.js';
+import reqFundCardRoutes from './routes/ReqForFundingRoutes/req.fund.js';
+import approvalReqRoutes from './routes/ReqForFundingRoutes/approvalRoutes/req.approval.routes.js';
 import cors from 'cors';
 const app = express();
 
@@ -67,6 +69,10 @@ app.use('/api/userkyc', userKYCRoutes);
 app.use('/api/approvals', approvalRoutes);
 
 app.use('/api/funds', fundRoutes);
+
+app.use('/api/req/fund', reqFundCardRoutes);
+
+app.use('/api/req/approval', approvalReqRoutes);
 
 app.use('/api/teams', teamMemberRoutes);
 

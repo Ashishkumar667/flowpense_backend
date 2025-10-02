@@ -41,6 +41,7 @@ model User {
   expenses      CardExpense[]
   teams         TeamEmployee[]
   userKyc       UserKyc[]
+  cardFundingRequest  CardFundingRequest[]    
 }
 
 model Otp {
@@ -122,6 +123,7 @@ model Card {
   companyId         Int
   company           Company    @relation(fields: [companyId], references: [id])
    expenses             CardExpense[]
+   cardFundingRequest   CardFundingRequest[]
 }
 
 model CardExpense {
@@ -173,5 +175,16 @@ model UserKyc {
   country   String   @default("Nigeria")
   docs      Json     // [{filename, path, mimetype, size}]
   status    String   @default("pending")
+  createdAt DateTime @default(now())
+}
+
+model CardFundingRequest {
+  id        Int      @id @default(autoincrement())
+  cardId    Int
+  card      Card     @relation(fields: [cardId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Float
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
   createdAt DateTime @default(now())
 }

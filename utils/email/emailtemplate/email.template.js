@@ -149,3 +149,25 @@ export const sendexpenseApprovalEmailTemplate = asyncHandler(async(email, firstN
 }
 );
 
+export const sendRequestForCradFunding = asyncHandler(
+  async (email, firstName, requesterName, cardId, cardName, cardDepartment) => {
+    const subject = "Requesting Card Funding - Flowpense";
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2 style="color: #333;">Card Funding Request</h2>
+        <p>Dear ${firstName},</p>
+        <p><strong>${requesterName}</strong> is requesting funding for a card. Here are the details:</p>
+        <ul>
+          <li><strong>Card Id:</strong> ${cardId}</li>
+          <li><strong>Card Name:</strong> ${cardName}</li>
+          <li><strong>Card Department:</strong> ${cardDepartment}</li>
+        </ul>
+        <p>Please log in to the system to review and approve/reject this request.</p>
+        <p>Best regards,<br/><strong>The Flowpense Team</strong></p>
+      </div>
+    `;
+
+    await sendEmail(email, subject, html);
+    console.log("Card funding request email sent to:", email);
+  }
+);
