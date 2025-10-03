@@ -15,7 +15,7 @@ export const registerCompanyService = asyncHandler(async({ name, rcNumber, tin, 
 });
 
 
-export const uploadCompanyKycService = asyncHandler(async({ companyId, docs, adminBvn }) => {
+export const uploadCompanyKycService = asyncHandler(async({ companyId, docs, adminBvn,accountNumber, bankCode }) => {
    console.log(companyId, docs, adminBvn);
 
   if (!adminBvn || typeof adminBvn !== 'string' || adminBvn.length === 0) {
@@ -31,12 +31,16 @@ export const uploadCompanyKycService = asyncHandler(async({ companyId, docs, adm
       docs,
       adminBvnHash: hashedBvn,
       status: "submitted",
+      accountNumber,
+      bankCode
     },
     create: {
       companyId,
       docs,
       adminBvnHash: hashedBvn,
       status: "submitted",
+      accountNumber,
+      bankCode
     },
   });
 });

@@ -4,14 +4,17 @@ import {
     registerCompanyService,
     uploadCompanyKycService
 } from './companyServices/company.services.js';
+import {
+  paystack 
+} from '../../provider/paystack/paystack.js';
 
 export const registerCompany = asyncHandler(async(req, res) => {
     try {
-           const { name, rcNumber, tin, country } = req.body;
+         const { name, rcNumber, tin, country } = req.body;
 
-           if (!name || !rcNumber || !tin || !country) {
+     if (!name || !rcNumber || !tin || !country) {
              return res.status(400).json({ error: "Missing required fields" });
-         }
+     }
 
     const company = await registerCompanyService({
       name,
@@ -21,17 +24,48 @@ export const registerCompany = asyncHandler(async(req, res) => {
       adminUserId: req.user.id,
     });
 
-    res.status(200).json({ success: true, company });
+    const adminUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { email: true, firstName: true, lastName: true, mobile: true },
+    });
+
+    if (!adminUser) {
+      return res.status(404).json({ error: "Admin user not found" });
+    }
+
+    
+    const paystackResponse = await paystack.post("/customer", {
+      email: adminUser.email,
+      first_name: adminUser.firstName || name,
+      last_name: adminUser.lastName || "Admin",
+      phone: adminUser.mobile || undefined,
+    });
+    console.log("paystackResponse", paystackResponse);
+
+    const customerCode = paystackResponse.data?.data?.customer_code;
+    console.log("customer",customerCode);
+
+    if (!customerCode) {
+      return res.status(500).json({ error: "Failed to create Paystack customer" });
+    }
+
+    
+    const updatedCompany = await prisma.company.update({
+      where: { id: company.id },
+      data: { paystackCustomerCode: customerCode },
+    });
+
+    res.status(200).json({ success: true,  company: updatedCompany, });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create company" });
   }
-})
+});
 
 
 export const uploadCompanyKyc = asyncHandler(async(req, res) => {
  try {
-    const { companyId, adminBvn } = req.body;
+    const { companyId, adminBvn, accountNumber, bankCode } = req.body;
     const files = req.files;
     console.log("kyc details",companyId, adminBvn, files);
 
@@ -59,15 +93,66 @@ export const uploadCompanyKyc = asyncHandler(async(req, res) => {
     const kyc = await uploadCompanyKycService({ 
       companyId: parsedcompanyid, 
       docs, 
-      adminBvn 
+      adminBvn,
+      accountNumber,
+      bankCode 
     });
+
+    const companyInfo = await prisma.company.findUnique({
+      where: {id: parsedcompanyid},
+      select:{
+        name:true,
+        paystackCustomerCode:true
+      }
+      
+    })
+
+    try {
+      const response = await paystack.post(`/customer/${companyInfo.paystackCustomerCode}/identification`,
+        {
+          country: "NG",
+          type: "bank_account",
+          account_number: accountNumber,
+          bvn: adminBvn,
+          bank_code: bankCode,
+          first_name: companyInfo.name,
+        },
+      );
+
+      console.log("Response from paystack for kyc status", response); //debug
+
+      if(response.data.status == true){
+
+        await prisma.companyKyc.update({
+          where: {companyId: parsedcompanyid},
+          data: {status: "verified"}
+        })
+
+        //update company model for kyc verififcation
+         await prisma.company.update({
+          where: { id: parsedcompanyid},
+          data: { kycStatus: "verified"}
+         })
+
+      }else{
+
+        await prisma.company.update({
+          where: { id: parsedcompanyid},
+          data: { kycStatus: "Rejected"}
+         });
+        
+      }
+    } catch (err) {
+      console.error("Paystack verification error:", err.response?.data || err.message);
+      return res.status(500).json({ error: "BVN verification failed", details: err.response?.data || err.message });
+    }
 
     res.status(200).json({ success: true, kyc });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to upload KYC" });
   }
-})
+});
 
 
 export const getCompanyDetails = asyncHandler(async( req, res) => {

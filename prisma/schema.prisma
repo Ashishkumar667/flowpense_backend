@@ -73,6 +73,7 @@ model Company {
   updatedAt     DateTime       @updatedAt
 
   users        User[]
+  paystackCustomerCode String?
   companyKyc   CompanyKyc?
   walletLedger WalletLedger[]
   cards         Card[]
@@ -84,6 +85,8 @@ model CompanyKyc {
   companyId    Int      @unique
   docs         Json     // Store uploaded docs as JSON (e.g. file URLs)
   adminBvnHash String
+  accountNumber String?
+  bankCode      String?
   status       String   @default("pending")
   reviewerId   Int?     // SuperAdmin reviewing KYC
   createdAt    DateTime @default(now())
