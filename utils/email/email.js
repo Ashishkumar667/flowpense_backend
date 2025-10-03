@@ -1,25 +1,25 @@
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-dotenv.config();
+// import nodemailer from "nodemailer";
+// import dotenv from "dotenv";
+// dotenv.config();
 
-export const sendEmail = async (to, subject, html) => {
-  const transporter = nodemailer.createTransport({
-      host:"smtp.gmail.com",
-      port:587,
-      secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+// export const sendEmail = async (to, subject, html) => {
+//   const transporter = nodemailer.createTransport({
+//       host:"smtp.gmail.com",
+//       port:587,
+//       secure: false,
+//     auth: {
+//       user: process.env.EMAIL_USER,
+//       pass: process.env.EMAIL_PASS,
+//     },
+//   });
 
-  await transporter.sendMail({
-    from: `"Flowpense" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html,
-  });
-};
+//   await transporter.sendMail({
+//     from: `"Flowpense" <${process.env.EMAIL_USER}>`,
+//     to,
+//     subject,
+//     html,
+//   });
+// };
 
 // import nodemailer from "nodemailer";
 // import { google } from 'googleapis';
@@ -83,33 +83,33 @@ export const sendEmail = async (to, subject, html) => {
 //   html,
 // });
 
-// import formData from "form-data";
-// import Mailgun from "mailgun.js";
-// import dotenv from "dotenv";
+import formData from "form-data";
+import Mailgun from "mailgun.js";
+import dotenv from "dotenv";
 
-// dotenv.config();
+dotenv.config();
 
-// const mailgun = new Mailgun(formData);
-// const mg = mailgun.client({
-//   username: "api",
-//   key: process.env.MAILGUN_API_KEY, // from Mailgun dashboard
-// });
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: "api",
+  key: process.env.MAILGUN_API_KEY, // from Mailgun dashboard
+});
 
-// export const sendEmail = async (to, subject, html) => {
-//   try {
-//     const domain = process.env.MAILGUN_DOMAIN; // e.g., sandboxXXXX.mailgun.org
+export const sendEmail = async (to, subject, html) => {
+  try {
+    const domain = process.env.MAILGUN_DOMAIN; // e.g., sandboxXXXX.mailgun.org
 
-//     const result = await mg.messages.create(domain, {
-//       from: `"Flowpense" <no-reply@${domain}>`,
-//       to,
-//       subject,
-//       html,
-//     });
+    const result = await mg.messages.create(domain, {
+      from: `"Flowpense" <no-reply@${domain}>`,
+      to,
+      subject,
+      html,
+    });
 
-//     console.log("✅ Email sent via Mailgun:", result.id);
-//     return result;
-//   } catch (error) {
-//     console.error("❌ Mailgun email sending error:", error.message);
-//     throw new Error("Failed to send email");
-//   }
-// };
+    console.log("✅ Email sent via Mailgun:", result.id);
+    return result;
+  } catch (error) {
+    console.error("❌ Mailgun email sending error:", error.message);
+    throw new Error("Failed to send email");
+  }
+};
