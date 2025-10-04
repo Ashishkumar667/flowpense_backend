@@ -15,8 +15,33 @@ export const registerCompanyService = asyncHandler(async({ name, rcNumber, tin, 
 });
 
 
-export const uploadCompanyKycService = asyncHandler(async({ companyId, docs, adminBvn,accountNumber, bankCode }) => {
-   console.log(companyId, docs, adminBvn);
+export const uploadCompanyKycService = asyncHandler(async({ 
+  companyId, 
+  docs, 
+  adminBvn,
+  accountNumber, 
+  bankCode,
+  registeredCompanyName,
+      TradingName,
+      BusinessType,
+      Industry,
+      RegisteredNo,
+      DateofInc,
+      EmployeeNo,
+      Website,
+      Description,
+      FullName,
+      Email,
+      Role,
+      PhoneNo,
+      TIN,
+      VAT,
+      CAC,
+      BankName,
+      Currency,
+      reviewerId
+}) => {
+  // console.log(companyId, docs, adminBvn);
 
   if (!adminBvn || typeof adminBvn !== 'string' || adminBvn.length === 0) {
     throw new Error("Admin BVN is required and must be a valid string.");
@@ -32,7 +57,26 @@ export const uploadCompanyKycService = asyncHandler(async({ companyId, docs, adm
       adminBvnHash: hashedBvn,
       status: "submitted",
       accountNumber,
-      bankCode
+      bankCode,
+      registeredCompanyName,
+      TradingName,
+      BusinessType,
+      Industry,
+      RegisteredNo,
+      DateofInc,
+      EmployeeNo,
+      Website,
+      Description,
+      FullName,
+      Email,
+      Role,
+      PhoneNo,
+      TIN,
+      VAT,
+      CAC,
+      BankName,
+      Currency,
+      reviewerId
     },
     create: {
       companyId,
@@ -40,7 +84,26 @@ export const uploadCompanyKycService = asyncHandler(async({ companyId, docs, adm
       adminBvnHash: hashedBvn,
       status: "submitted",
       accountNumber,
-      bankCode
+      bankCode,
+      registeredCompanyName,
+      TradingName,
+      BusinessType,
+      Industry,
+      RegisteredNo,
+      DateofInc,
+      EmployeeNo,
+      Website,
+      Description,
+      FullName,
+      Email,
+      Role,
+      PhoneNo,
+      TIN,
+      VAT,
+      CAC,
+      BankName,
+      Currency,
+      reviewerId
     },
   });
 });

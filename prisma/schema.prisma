@@ -41,7 +41,8 @@ model User {
   expenses      CardExpense[]
   teams         TeamEmployee[]
   userKyc       UserKyc[]
-  cardFundingRequest  CardFundingRequest[]    
+  cardFundingRequest  CardFundingRequest[]  
+  companyKycReviewed          CompanyKyc[]    @relation("ReviewedKycs")  
 }
 
 model Otp {
@@ -84,12 +85,32 @@ model CompanyKyc {
   id           Int      @id @default(autoincrement())
   companyId    Int      @unique
   docs         Json     // Store uploaded docs as JSON (e.g. file URLs)
-  adminBvnHash String
+  adminBvnHash String?
   accountNumber String?
   bankCode      String?
+  registeredCompanyName    String?
+  TradingName   String?
+  BusinessType  String?
+  Industry      String?
+  RegisteredNo  String?
+  DateofInc     String?
+  EmployeeNo    String?
+  Website       String?
+  Description   String?
+  FullName      String?
+  Email         String?
+  Role          String?
+  PhoneNo       String?
+  TIN           String?
+  VAT           String?
+  CAC           String?
+  BankName      String?
+  Currency      String?
   status       String   @default("pending")
   reviewerId   Int?     // SuperAdmin reviewing KYC
+
   createdAt    DateTime @default(now())
+  user         User?     @relation("ReviewedKycs", fields: [reviewerId], references: [id])
 
   company     Company   @relation(fields: [companyId], references: [id])
 }

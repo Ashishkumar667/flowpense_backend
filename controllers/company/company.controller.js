@@ -65,16 +65,41 @@ export const registerCompany = asyncHandler(async(req, res) => {
 
 export const uploadCompanyKyc = asyncHandler(async(req, res) => {
  try {
-    const { companyId, adminBvn, accountNumber, bankCode } = req.body;
+        const {
+      companyId,
+      adminBvn,
+      accountNumber,
+      bankCode,
+      registeredCompanyName,
+      TradingName,
+      BusinessType,
+      Industry,
+      RegisteredNo,
+      DateofInc,
+      EmployeeNo,
+      Website,
+      Description,
+      FullName,
+      Email,
+      Role,
+      PhoneNo,
+      TIN,
+      VAT,
+      CAC,
+      BankName,
+      Currency,
+      reviewerId
+    } = req.body;
     const files = req.files;
-    console.log("kyc details",companyId, adminBvn, files);
+    console.log("kyc details", companyId, adminBvn, files);
 
-    if (!companyId || !files?.length || !adminBvn) {
+    if (!companyId || !files?.length || !adminBvn || !accountNumber || !bankCode) {
       return res.status(400).json({ error: "Missing KYC fields" });
     };
     //console.log("companyId", companyId);
 
     const parsedcompanyid = parseInt(req.body.companyId,10 );
+    const parsedReviewerId =  parseInt(req.body.reviewerId, 10);
 
     //console.log("companyid", parsedcompanyid);
 
@@ -90,12 +115,31 @@ export const uploadCompanyKyc = asyncHandler(async(req, res) => {
     
     console.log("docs", docs);
 
-    const kyc = await uploadCompanyKycService({ 
-      companyId: parsedcompanyid, 
-      docs, 
+    const kyc = await uploadCompanyKycService({
+      companyId: parsedcompanyid,
+      docs,
       adminBvn,
       accountNumber,
-      bankCode 
+      bankCode,
+      registeredCompanyName,
+      TradingName,
+      BusinessType,
+      Industry,
+      RegisteredNo,
+      DateofInc,
+      EmployeeNo,
+      Website,
+      Description,
+      FullName,
+      Email,
+      Role,
+      PhoneNo,
+      TIN,
+      VAT,
+      CAC,
+      BankName,
+      Currency,
+      reviewerId : parsedReviewerId
     });
 
     const companyInfo = await prisma.company.findUnique({
