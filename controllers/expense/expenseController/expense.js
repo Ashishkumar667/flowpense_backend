@@ -1,6 +1,7 @@
 import prisma from '../../../config/db.js';
 import asyncHandler from 'express-async-handler';
 import { approvalRequestEmailTemplate } from '../../../utils/email/emailtemplate/email.template.js';
+import  redisClient  from '../../../config/cache/redis.js';
 
 export const expenseController = asyncHandler(async (req, res) => {
   try {
@@ -91,6 +92,8 @@ export const expenseController = asyncHandler(async (req, res) => {
 
     }
     
+    //deleting transaction list from redis
+    await redisClient.del(`transactions_${cardId}`);
 
     return res.status(201).json({
       success: true,
@@ -132,10 +135,23 @@ export const getExpenses = asyncHandler(async(req, res) => {
             return res.status(403).json({ error: "Only admin users can access expense data" });
         }
 
+        
+        const cachedExpenses = await redisClient.get('all_expenses');
+        if(cachedExpenses){
+          console.log("Response from redis....")
+          return res.status(200).json({
+            success: true,
+            Expenses : Json.parse(cachedExpenses)
+          });
+
+        };
+
         const expenses = await prisma.cardExpense.findMany({
             where: { cardId: parseInt(cardId) },
             orderBy: { createdAt: 'desc' }
         });
+
+        await redisClient.set("all_expenses",Json.stringify(expenses), {EX: 120 });
         res.status(200).json({ success: true, expenses });
 
     } catch (error) {
@@ -167,10 +183,22 @@ export const getAllExpenses = asyncHandler(async(req, res) => {
             return res.status(403).json({ error: "You can only access expenses within your company" });
         }
 
+        const cachedExpenses = await redisClient.get('all_expenses');
+        if(cachedExpenses){
+          console.log("Response from redis....")
+          return res.status(200).json({
+            success: true,
+            Expenses : Json.parse(cachedExpenses)
+          });
+
+        };
+
         const expenses = await prisma.cardExpense.findMany({
             orderBy: { createdAt: 'desc' }
         });
 
+
+        await redisClient.set("all_expenses",Json.stringify(expenses), {EX: 120 });
         res.status(200).json({ success: true, expenses });
     } catch (error) {
         console.error("Error fetching all expenses:", error);

@@ -1,5 +1,7 @@
 import prisma from '../../config/db.js';
 import asyncHandler from 'express-async-handler';
+import redisClient from '../../config/cache/redis.js';
+import { redis } from 'googleapis/build/src/apis/redis/index.js';
 
 export const Createteam = asyncHandler(async (req, res) => {
     try {
@@ -39,32 +41,64 @@ export const Createteam = asyncHandler(async (req, res) => {
 });
 
 export const getTeam = asyncHandler(async (req, res) => {
-    try {
-        const userId = req.user.id; 
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
-        });
+  try {
+    const userId = req.user.id;
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
+    if (!user) return res.status(404).json({ 
+        error: "User not found" 
+    });
 
-        if (user.role !== "ADMIN") {
-            return res.status(403).json({ error: "Only admin users can access teams" });
-        }   
-
-        const teams = await prisma.team.findMany({
-            where: { companyId: user.companyId }
-        });
-
-        res.status(200).json({ success: true, teams });
-
-    } catch (error) {
-        console.error("Error fetching teams:", error);
-        res.status(500).json({ error: "Failed to fetch teams", message: error.message });
+    if (user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Only admin users can access teams" });
     }
 
+    
+    const redisKey = `company_${user.companyId}_teams`;
+
+    const cachedData = await redisClient.get(redisKey);
+    if (cachedData) {
+      console.log(`⚡ Fetched teams from Redis for company ${user.companyId}`);
+      return res.status(200).json({
+        success: true,
+        message: "Fetched teams from cache",
+        teams: JSON.parse(cachedData)
+      });
+    }
+
+    const teams = await prisma.team.findMany({
+      where: { companyId: user.companyId },
+      include: {
+        Members: {
+          include: {
+            user: {
+              select: {
+                     id: true,
+                     firstName: true,
+                     lastName: true,
+                     email: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    await redisClient.set(redisKey, JSON.stringify(teams), { EX: 120 });
+
+    res.status(200).json({ 
+        success: true, teams 
+    });
+  } catch (error) {
+    console.error("Error fetching teams:", error);
+    res.status(500).json({ 
+        error: "Failed to fetch teams", 
+        message: error.message 
+    });
+  }
 });
 
 export const deleteTeam = asyncHandler(async (req, res) => {
@@ -103,6 +137,9 @@ export const deleteTeam = asyncHandler(async (req, res) => {
         await prisma.team.delete({
             where: { id: parseInt(teamId) }
         });
+
+            const redisKey = `company_${user.companyId}_teams`;
+            await redisClient.del(redisKey);
 
         res.status(200).json({ success: true, message: "Team deleted successfully" });
 
@@ -161,6 +198,9 @@ export const updateTeam = asyncHandler(async (req, res) => {
             MonthlyBudget
         }
     });
+
+    await redisClient.del(`company_${user.companyId}_teams`);
+    
 
     res.status(200).json({ success: true, team: updatedTeam });
 
@@ -241,6 +281,9 @@ export const addEmployeeToTeam = asyncHandler(async (req, res) => {
       where: { id: team.id },
       data: { TotalMembers: totalTeamMembers },
     });
+
+    await redisClient.del(`company_${user.companyId}_teams`);
+
 
     res.status(200).json({
       success: true,

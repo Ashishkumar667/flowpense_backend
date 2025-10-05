@@ -13,6 +13,7 @@ import {
 import {
     generateTokens
 } from '../../utils/generateToken/generate.token.js';
+import redisClient from '../../config/cache/redis.js'; 
 dotenv.config();
 
 export const registerUser = asyncHandler(async (req, res) => {
@@ -351,6 +352,16 @@ export const getUserProfile = asyncHandler(async(req, res) => {
         
         const userId = req.user.id;
 
+        const cachedUserKey =  `userProfile_${userId}`;
+        const cacheddata = await redisClient.get(cachedUserKey);
+        if(cacheddata){
+            return res.status(200).json({
+                    message:"profile fetched from cache",
+                    success: true,
+                    user: JSON.parse(cacheddata)
+            });
+        }
+
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { 
@@ -371,6 +382,7 @@ export const getUserProfile = asyncHandler(async(req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
+        await redisClient.set(cachedUserKey, JSON.stringify(user), {EX:60});
         res.status(200).json({ 
             user 
         });
@@ -680,6 +692,7 @@ export const deleteAcccount = asyncHandler(async(req, res) => {
             where: { id: UserId }
         });
 
+        await redisClient.del(`userProfile_${UserId}`);
         res.status(200).json({ message: "Account deleted successfully" });
         
     } catch(error) {
@@ -709,6 +722,8 @@ export const updateProfile = asyncHandler(async(req, res) =>{
             where: { id: userId },
             data: { firstName, lastName, mobile }
         });
+
+        await redisClient.del(`userProfile_${userId}`);
         res.status(200).json({
             message: "Profile updated successfully",
             user: updatedUser
@@ -794,6 +809,7 @@ export const deleteAcc = asyncHandler(async(req, res) => {
             where: { id: userId }
         })
 
+        await redisClient.del(`userProfile_${userId}`);
         res.status(200).json({
             message:"Account deleted successfully"
         });

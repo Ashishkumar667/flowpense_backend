@@ -2,6 +2,7 @@ import prisma from '../../config/db.js';
 import { cardCreationEmailTemplate } from '../../utils/email/emailtemplate/email.template.js';
 import asyncHandler from 'express-async-handler';
 import { createCardServices } from './card.services.js';
+import  redisClient  from '../../config/cache/redis.js';
 
 const generateCardNumber = () => {
     const segments = [];
@@ -60,6 +61,8 @@ export const createCardController = asyncHandler(async(req, res) => {
 
         await cardCreationEmailTemplate(user.email, user.firstName, cardName, CardNumber, cardType);
 
+        await redisClient.del('all_cards');
+
         res.status(200).json({ success: true,message:"Card created successfully", card });
 
     } catch (error) {
@@ -82,10 +85,28 @@ export const getAllcards = asyncHandler(async(req, res) => {
 
         if(user.role !== "ADMIN"){
             return res.status(403).json({ error: "Only admin users can access cards" });
+        };
+
+        const cachedData = await redisClient.get('all_cards');
+        console.log("cachedmresult...", cachedData);
+            if (cachedData) {
+                const parsedCards = JSON.parse(cachedData);
+                  console.log('⚡ Returning cards from Redis cache');
+                  return res.status(200).json({
+                       success: true,
+                       message: "Cards fetched from cache",
+                       cards: JSON.parse(cachedData),
+                       TotalCrds: parsedCards.length,
+            });
         }
 
         const cards = await prisma.card.findMany();
         const totalCards = cards.length;
+        if(cards.length != 0){
+            console.log('📦 Fetched from DB, caching result...');
+            await redisClient.set('all_cards', JSON.stringify(cards), { EX: 60 });
+        };
+
         console.log("Total cards:", totalCards); //debug purpose
 
         res.status(200).json({ success: true,message:"Cards fetched successfully", cards, totalCards });
@@ -93,7 +114,7 @@ export const getAllcards = asyncHandler(async(req, res) => {
         console.log("Error in fetching cards:", error);
         res.status(500).json({ error: "Failed to fetch cards" , message:error.message});
     }
-})
+});
 
 export const getCardById = asyncHandler(async(req, res) => {
     try {
@@ -112,12 +133,25 @@ export const getCardById = asyncHandler(async(req, res) => {
             return res.status(400).json({ error: "Card ID is required" });
         }
 
+        const cacheKey = `card_${cardId}`;
+        const cachedCard = await redisClient.get(cacheKey);
+          if (cachedCard) {
+              console.log("⚡ Returning card from cache");
+              return res.status(200).json({
+                   success: true,
+                   message: "Card fetched from cache",
+                   card: JSON.parse(cachedCard),
+                });
+            }
+
         const card = await prisma.card.findUnique({
             where: { id: parseInt(cardId) }
         });
         if(!card){
             return res.status(404).json({ error: "Card not found" });
         }
+
+        await redisClient.set(cacheKey, JSON.stringify(card), { EX: 120 });
 
         res.status(200).json({ success: true,message:"Card fetched successfully", card });  
     } catch (error) {
@@ -160,6 +194,8 @@ export const blockUnblockCard = asyncHandler(async(req, res) => {
             where: { id: parseInt(cardId) },
             data: { status: action }
         });
+
+        await redisClient.del('all_cards');
 
         res.status(200).json({ success: true,message:`Card ${action} successfully`, card: updatedCard });
     } catch (error) {
@@ -205,6 +241,8 @@ export const editCardLimits = asyncHandler(async(req, res) => {
                 PerTransactionLimit:perTransactionLimit
             }
         }); 
+
+        await redisClient.del('all_cards');
         res.status(200).json({ success: true,message:"Card limits updated successfully", card: updatedCard });
     } catch (error) {
         console.log("Error in editing card limits:", error);
@@ -232,6 +270,15 @@ export const transactionHistory = asyncHandler(async(req, res) => {
             return res.status(400).json({ error: "Card ID is required" });
         }
 
+        //get transaction from redis 
+        const cacheKey = `transactions_${cardId}`;
+        const cachedTx = await redisClient.get(cacheKey);
+        if (cachedTx) 
+            console.log("Response for transaction from redis");
+            return res.json({ 
+            success: true, transactions: JSON.parse(cachedTx) 
+        });
+
         const transactions = await prisma.cardExpense.findMany({
                  where: { cardId: parseInt(cardId) },
                  orderBy: { createdAt: 'desc' }
@@ -240,8 +287,10 @@ export const transactionHistory = asyncHandler(async(req, res) => {
 
         if (!transactions.length) {
               return res.status(404).json({ error: "No transactions found for this card" });
-        }
+        };
 
+        //set up redis for transaction
+        await redisClient.set(cacheKey, JSON.stringify(transactions), { EX: 120 });
 
         res.status(200).json({ success: true,message:"Card transactions fetched successfully", transactions });
     } catch (error) {
@@ -286,6 +335,8 @@ export const deleteCard = asyncHandler(async(req, res) => {
         await prisma.card.delete({
             where: { id: parseInt(cardId) }
         });
+
+        await redisClient.del('all_cards');
 
         res.status(200).json({ success: true,message:"Card deleted successfully" });
     } catch (error) {
