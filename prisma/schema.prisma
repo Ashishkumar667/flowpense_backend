@@ -39,7 +39,7 @@ model User {
   company      Company?     @relation(fields: [companyId], references: [id])
   refreshTokens RefreshToken[]
   expenses      CardExpense[]
-  teams         TeamEmployee[]
+  teams         TeamMember[]
   userKyc       UserKyc[]
   cardFundingRequest  CardFundingRequest[]  
   companyKycReviewed          CompanyKyc[]    @relation("ReviewedKycs")  
@@ -79,6 +79,7 @@ model Company {
   walletLedger WalletLedger[]
   cards         Card[]
   teams        Team[]
+  Employee  EmployeeData[]
 }
 
 model CompanyKyc {
@@ -171,12 +172,12 @@ model Team {
   MonthlyBudget Int
   companyId     Int
   TotalMembers  Int        @default(0)
-  Members       TeamEmployee[]
+  Members       TeamMember[]
   company       Company    @relation(fields: [companyId], references: [id]) 
   createdAt     DateTime   @default(now())
 }
 
-model TeamEmployee {
+model TeamMember {
   id         Int     @id @default(autoincrement())
   teamId     Int
   team       Team    @relation(fields: [teamId], references: [id])
@@ -184,12 +185,20 @@ model TeamEmployee {
   userId     Int
   user       User    @relation(fields: [userId], references: [id])
 
+  Employee   EmployeeData[]
+
+  joinedAt   DateTime @default(now())
+}
+
+model EmployeeData {
+  id         Int     @id @default(autoincrement())
+  companyId    Int
+  company    Company @relation(fields: [companyId], references: [id]) 
   department String
   jobTitle   String
   fullName   String
   email      String
-
-  joinedAt   DateTime @default(now())
+  addedAt   DateTime @default(now())
 }
 
 model UserKyc {

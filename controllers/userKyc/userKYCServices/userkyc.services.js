@@ -6,13 +6,13 @@ export const uploadUserKycService = async ({ userId, country, docs }) => {
     update: {
       country,
       docs,
-      status: "submitted",
+      status: "pending",
     },
     create: {
       userId,
       country,
       docs,
-      status: "submitted",
+      status: "pending",
     },
   });
 };

@@ -1,7 +1,9 @@
 import prisma from '../../config/db.js';
 import asyncHandler from 'express-async-handler';
 import redisClient from '../../config/cache/redis.js';
-import { redis } from 'googleapis/build/src/apis/redis/index.js';
+import {
+  sendEmailToEmployee
+} from '../../utils/email/emailtemplate/email.template.js';
 
 export const Createteam = asyncHandler(async (req, res) => {
     try {
@@ -216,7 +218,7 @@ export const addEmployeeToTeam = asyncHandler(async (req, res) => {
   try {
     const userId = req.user.id; 
     const { teamId } = req.params;
-    const { employeeId, fullName, jobTitle, email, department } = req.body;
+    const { employeeId } = req.body;  //userId,  will add more when it is clear
 
     if (!teamId || !employeeId) {
       return res.status(400).json({ error: "Team ID and Employee ID are required" });
@@ -261,25 +263,21 @@ export const addEmployeeToTeam = asyncHandler(async (req, res) => {
     }
 
    
-    const newTeamMember = await prisma.teamEmployee.create({
+    const newTeamMember = await prisma.teamMember.create({
       data: {
         teamId: team.id,
         userId: employee.id,
-        department,
-        jobTitle,
-        fullName,
-        email,
       },
     });
 
    
-    const totalTeamMembers = await prisma.teamEmployee.count({
-      where: { teamId: team.id },
-    });
+    // const totalTeamMembers = await prisma.teamMember.count({
+    //   where: { teamId: team.id },
+    // });
 
     await prisma.team.update({
       where: { id: team.id },
-      data: { TotalMembers: totalTeamMembers },
+      data: { TotalMembers:{ increment: 1} },
     });
 
     await redisClient.del(`company_${user.companyId}_teams`);
@@ -296,3 +294,109 @@ export const addEmployeeToTeam = asyncHandler(async (req, res) => {
     res.status(500).json({ error: "Failed to add employee to team", message: error.message });
   }
 });
+
+
+export const addEmployeeToCompany = asyncHandler(async(req,res) => {
+  try {
+    const userId = req.user.id;
+
+    const { fullName, jobTitle, email, department } = req.body;
+
+    if(!fullName || !jobTitle || !email || !department){
+       return res.status(400).json({
+          message:"All fields are required"
+       });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {id: userId}
+    });
+
+    if(user.role !==  "ADMIN"){
+      return res.status(403).json({
+        message:"Only Admin can add employee"
+      })
+    };
+
+    const employee = await prisma.employeeData.create({
+       data:{
+          department,
+          jobTitle,
+          fullName,
+          email,
+          companyId: user.companyId,
+       }
+    });
+
+    await sendEmailToEmployee(
+            email,
+            fullName,
+            jobTitle,
+            department,      
+    );
+
+    await redisClient.del(`company_${user.companyId}_employees`);
+
+    res.status(200).json({
+      message:"Employee added successfully",
+      Employee: employee
+    });
+    
+  } catch (error) {
+    console.error("Error adding employee :", error);
+    res.status(500).json({ error: "Failed to add employee", message: error.message });
+  }
+});
+
+export const getAllEmployee = asyncHandler(async(req, res) => {
+  try {
+    const userId = req.user.id;
+    //const { companyId } = req.query;
+
+    const user = await prisma.user.findUnique({
+      where: {id :userId }
+    });
+
+    if(!user.role == "ADMIN"){
+      return res.status(403).json({
+        message:"Only admin can view this"
+      })
+    };
+
+    const cachedKey = `company_${user.companyId}_employees`;
+    const cachedData = await redisClient.get(cachedKey);
+
+    if(cachedData){
+      return res.status(200).json({
+                    message:"Employee fetched from cache",
+                    success: true,
+                    user: JSON.parse(cachedData)
+            });
+    }
+
+    const employee = await prisma.employeeData.findMany({
+      where: { companyId: user.companyId },
+      include:{
+        company: true,
+      }
+    });
+
+    if(!employee){
+      return res.status(404).json({
+        message:"Employee data not found"
+      })
+    };
+
+    await redisClient.set(cachedKey, JSON.stringify(employee), {EX:60});
+    
+    res.status(200).json({
+        success:true,
+        message:"Employee data feched successfully",
+        Employee:employee
+    });
+
+  } catch (error) {
+    console.error("Error getting employee :", error);
+    res.status(500).json({ error: "Failed to get employee", message: error.message });
+  }
+})
