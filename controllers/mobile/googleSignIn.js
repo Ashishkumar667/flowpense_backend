@@ -15,13 +15,14 @@ const generateJwt = (user) =>
       email: user.email,
       name: user.firstName,
       provider: "google",
+      role:role.user
     },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
 
 export const googleMobileLogin = async (req, res) => {
-  const { idToken } = req.body;
+  const { idToken, role } = req.body;
 
   if (!idToken) {
     return res.status(400).json({ message: "ID token is missing" });
@@ -50,7 +51,7 @@ export const googleMobileLogin = async (req, res) => {
           password: "", 
           isVerified: true,
           mobile: "", 
-          role: "EMPLOYEE",
+          role: role ||"EMPLOYEE",
         },
       });
     }
@@ -65,6 +66,7 @@ export const googleMobileLogin = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         profilePic: picture,
+        role: role
       },
     });
   } catch (error) {
@@ -77,7 +79,7 @@ export const googleMobileLogin = async (req, res) => {
 };
 
 export const googleIOSMobileLogin = async (req, res) => {
-  const { idToken } = req.body;
+  const { idToken, role } = req.body;
 
   if (!idToken) {
     return res.status(400).json({ message: "ID token is missing" });
@@ -104,7 +106,7 @@ export const googleIOSMobileLogin = async (req, res) => {
           password: "",
           isVerified: true,
           mobile: "",
-          role: "EMPLOYEE",
+          role: role || "EMPLOYEE",
         },
       });
     }
@@ -119,6 +121,7 @@ export const googleIOSMobileLogin = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         profilePic: picture,
+        role: role 
       },
     });
   } catch (error) {

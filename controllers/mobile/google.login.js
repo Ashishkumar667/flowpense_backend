@@ -15,13 +15,14 @@ const generateJwt = (user) =>
       email: user.email,
       name: user.firstName,
       provider: "google",
+      role: user.role,
     },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
 
 export const googleWebSignup = async (req, res) => {
-  const { code } = req.body;
+  const { code, role } = req.body; //added role here
   console.log("Received code:", code);
 
   if (!code) {
@@ -72,7 +73,7 @@ export const googleWebSignup = async (req, res) => {
           password: "", 
           isVerified: true,
           mobile: "",
-          role: "EMPLOYEE",
+          role: role,  //role here
           googleId,
           authProvider: "google",
           accessToken: access_token,
@@ -94,6 +95,7 @@ export const googleWebSignup = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         profilePic: picture || "https://shorturl.at/byGEu",
+        role: role
       },
       access_token,
       refresh_token,
