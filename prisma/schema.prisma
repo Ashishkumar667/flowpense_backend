@@ -194,6 +194,8 @@ model EmployeeData {
   id         Int     @id @default(autoincrement())
   companyId    Int
   company    Company @relation(fields: [companyId], references: [id]) 
+  teamId      Int?
+  team        TeamMember?  @relation(fields: [teamId], references: [id])
   department String
   jobTitle   String
   fullName   String
