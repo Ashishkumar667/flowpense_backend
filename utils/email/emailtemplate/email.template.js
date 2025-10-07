@@ -176,18 +176,18 @@ export const sendEmailToEmployee = asyncHandler(async(email,fullName, jobTitle,d
    const subject = "Empoyee Added - Flowpense";
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2 style="color: #333;">Card Funding Request</h2>
+        <h2 style="color: #333;">You are added as an employee BY company Admin</h2>
         <p>Dear ${fullName},</p>
         <p><strong>${email}</strong> ,This Email has been added by comapny Admin.</p>
         <ul>
           <li><strong>Job Title:</strong> ${jobTitle}</li>
           <li><strong>Department:</strong> ${department}</li>
         </ul>
-        <p>Please log in to the system to review and approve/reject this request.</p>
+        <p>Please register yourself through our app <strong>Flowpense</strong>.</p>
         <p>Best regards,<br/><strong>The Flowpense Team</strong></p>
       </div>
     `;
 
     await sendEmail(email, subject, html);
-    console.log("Card funding request email sent to:", email);
+    console.log("Employee added email sent to:", email);
 })
