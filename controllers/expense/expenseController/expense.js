@@ -1,7 +1,7 @@
-import prisma from '../../../config/db.js';
-import asyncHandler from 'express-async-handler';
-import { approvalRequestEmailTemplate } from '../../../utils/email/emailtemplate/email.template.js';
-import  redisClient  from '../../../config/cache/redis.js';
+import prisma from "../../../config/db.js";
+import asyncHandler from "express-async-handler";
+import { approvalRequestEmailTemplate } from "../../../utils/email/emailtemplate/email.template.js";
+import redisClient from "../../../config/cache/redis.js";
 
 export const expenseController = asyncHandler(async (req, res) => {
   try {
@@ -9,44 +9,40 @@ export const expenseController = asyncHandler(async (req, res) => {
     const { cardId, merchant, category, amount, currency } = req.body;
     const numericAmount = Number(amount);
 
-    if (!cardId || !merchant || amount == null || !currency || !category) {
+    if (!cardId || !merchant || isNaN(numericAmount) || !currency || !category) {
       return res.status(400).json({
-        message:
-          "cardId, merchant, amount, currency and category are required",
+        message: "cardId, merchant, amount, currency and category are required",
       });
     }
 
-   
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    const user = await prisma.user.findUnique({
+          where: { id: userId } 
+      });
 
-   
-    const card = await prisma.card.findUnique({ where: { id: cardId } });
-    if (!card) {
-      return res.status(404).json({ error: "Card not found" });
-    }
 
-   
-    if (card.CardFunding < amount) {
+    if (!user) return res.status(404).json({ 
+             error: "User not found"
+     });
+
+    const card = await prisma.card.findUnique({
+      where: { id: Number(cardId) },
+    });
+
+    if (!card) return res.status(404).json({ 
+            error: "Card not found" 
+          });
+
+    if (card.CardFunding < numericAmount)
       return res.status(400).json({ error: "Insufficient card balance" });
-    }
-
-    let expenseStatus = "Pending"; // default
-    let autoApproved = false;
-
-    if (amount <= 10000) {
-      
-      expenseStatus = "Approved";
-      autoApproved = true;
-
-    } else {
-      
-      expenseStatus = "Pending"; 
-    }
 
     
+    const AUTO_APPROVE_LIMIT = process.env.AUTO_APPROVE_LIMIT
+      ? Number(process.env.AUTO_APPROVE_LIMIT)
+      : 10000;
+
+    let expenseStatus = numericAmount <= AUTO_APPROVE_LIMIT ? "Approved" : "Pending";
+    let autoApproved = expenseStatus === "Approved";
+
     const expense = await prisma.cardExpense.create({
       data: {
         merchant,
@@ -54,21 +50,18 @@ export const expenseController = asyncHandler(async (req, res) => {
         Amount: numericAmount,
         currency,
         status: expenseStatus,
-        card: { connect: { id: cardId } },
+        card: { connect: { id: Number(cardId) } },
         user: { connect: { id: userId } },
       },
     });
 
-    
-    let updatedCard = null;
     if (autoApproved) {
-      const newCardFunding = card.CardFunding - amount;
-      updatedCard = await prisma.card.update({
-        where: { id: cardId },
-        data: { CardFunding: newCardFunding },
+      await prisma.card.update({
+        where: { id: Number(cardId) },
+        data: { CardFunding: card.CardFunding - numericAmount },
       });
-    }else {
-     
+    } else {
+      
       const approvers = await prisma.user.findMany({
         where: {
           companyId: card.companyId,
@@ -76,36 +69,42 @@ export const expenseController = asyncHandler(async (req, res) => {
         },
         select: { email: true, firstName: true, lastName: true },
       });
-    
 
-      for (const approver of approvers) {
-        await approvalRequestEmailTemplate(
-          approver.email,
-          approver.firstName,
-          approver.lastName,
-          card.CardName,
-          merchant,
-          amount,
-          expenseStatus
-        );
-        }
-
+      await Promise.all(
+        approvers.map((approver) =>
+          approvalRequestEmailTemplate(
+            approver.email,
+            approver.firstName,
+            approver.lastName,
+            card.CardName,
+            merchant,
+            numericAmount,
+            expenseStatus
+          )
+        )
+      );
     }
+
     
-    //deleting transaction list from redis
-    await redisClient.del(`transactions_${cardId}`);
+    const redisKeys = [
+      `transactions:${cardId}`,
+      `expenses:card:${cardId}`,
+      `expenses:company:${card.companyId}`,
+    ];
+    try {
+      await redisClient.del(redisKeys);
+    } catch (err) {
+      console.warn("Redis cleanup failed:", err.message);
+    }
 
     return res.status(201).json({
       success: true,
-      message:
-        autoApproved
-          ? "Expense recorded and auto-approved"
-          : "Expense recorded and awaiting approval",
+      message: autoApproved
+        ? "Expense recorded and auto-approved"
+        : "Expense recorded and awaiting approval",
       expense,
-      card: updatedCard || card,
     });
-        
-} catch (error) {
+  } catch (error) {
     console.error("Error recording expense:", error);
     res.status(500).json({
       error: "Failed to record expense",
@@ -115,93 +114,107 @@ export const expenseController = asyncHandler(async (req, res) => {
 });
 
 
-export const getExpenses = asyncHandler(async(req, res) => {
-    try {
-        const userId = req.user.id;
 
-        const { cardId } = req.params;
+export const getExpenses = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { cardId } = req.params;
 
-        if(!cardId){
-            return res.status(400).json({ error: "Card ID is required" });
-        }
-        const user = await prisma.user.findUnique({
-            where: { id: userId}
+    if (!cardId)
+      return res.status(400).json({ error: "Card ID is required" });
+
+    const user = await prisma.user.findUnique({ 
+          where: { id: userId }  
+      });
+
+
+    if (!user) return res.status(404).json({ 
+             error: "User not found" 
         });
 
-        if (!user){
-            return res.status(404).json({ error: "User not found" });
-        }
-        if(user.role !== "ADMIN"){
-            return res.status(403).json({ error: "Only admin users can access expense data" });
-        }
 
-        
-        const cachedExpenses = await redisClient.get('all_expenses');
-        if(cachedExpenses){
-          console.log("Response from redis....")
-          return res.status(200).json({
-            success: true,
-            Expenses : Json.parse(cachedExpenses)
-          });
+    if (user.role !== "ADMIN")
+      return res.status(403).json({ error: "Only admin users can access expense data" });
 
-        };
+    const redisKey = `expenses:card:${cardId}`;
+    const cachedExpenses = await redisClient.get(redisKey);
 
-        const expenses = await prisma.cardExpense.findMany({
-            where: { cardId: parseInt(cardId) },
-            orderBy: { createdAt: 'desc' }
-        });
+    if (cachedExpenses) {
+      console.log("⚡ Serving expenses from Redis cache");
+      return res.status(200).json({
+        success: true,
+        message: "Fetched from cache",
+        expenses: JSON.parse(cachedExpenses),
+      });
+    }
 
-        await redisClient.set("all_expenses",Json.stringify(expenses), {EX: 120 });
-        res.status(200).json({ success: true, expenses });
+    const expenses = await prisma.cardExpense.findMany({
+      where: {
+         cardId: Number(cardId)
+         },
+      orderBy: { createdAt: "desc" },
+    });
 
-    } catch (error) {
-     console.error("Error on getting expense:", error);
+    await redisClient.set(redisKey, JSON.stringify(expenses), { EX: 120 });
+
+    res.status(200).json({ success: true, expenses });
+  } catch (error) {
+    console.error("Error on getting expenses:", error);
     res.status(500).json({
-      error: "Failed to getting expense",
+      error: "Failed to get expenses",
       message: error.message,
     });
-    }
+  }
 });
 
-export const getAllExpenses = asyncHandler(async(req, res) => {
-    try {
-        const userId = req.user.id;
-        const companyId = req.user.companyId;
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
-        });
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
+export const getAllExpenses = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const companyId = req.user.companyId;
 
-        if (user.role !== "ADMIN") {
-            return res.status(403).json({ error: "Only admin users can access all expenses" });
-        }
+    const user = await prisma.user.findUnique({ 
+      where: { id: userId } 
+    });
 
-        if(user.companyId !== companyId){
-            return res.status(403).json({ error: "You can only access expenses within your company" });
-        }
-
-        const cachedExpenses = await redisClient.get('all_expenses');
-        if(cachedExpenses){
-          console.log("Response from redis....")
-          return res.status(200).json({
-            success: true,
-            Expenses : Json.parse(cachedExpenses)
-          });
-
-        };
-
-        const expenses = await prisma.cardExpense.findMany({
-            orderBy: { createdAt: 'desc' }
-        });
+    if (!user) return res.status(404).json({ 
+             error: "User not found"
+     });
 
 
-        await redisClient.set("all_expenses",Json.stringify(expenses), {EX: 120 });
-        res.status(200).json({ success: true, expenses });
-    } catch (error) {
-        console.error("Error fetching all expenses:", error);
-        res.status(500).json({ error: "Failed to fetch expenses", message: error.message });
+    if (user.role !== "ADMIN")
+      return res.status(403).json({
+             error: "Only admin users can access all expenses" 
+    });
+
+    const redisKey = `expenses:company:${companyId}`;
+    const cachedExpenses = await redisClient.get(redisKey);
+
+    if (cachedExpenses) {
+      console.log("⚡ Serving company expenses from Redis");
+      return res.status(200).json({
+        success: true,
+        message: "Fetched from cache",
+        expenses: JSON.parse(cachedExpenses),
+      });
     }
+
+    
+    const expenses = await prisma.cardExpense.findMany({
+      where: {
+        card: { companyId: companyId },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    await redisClient.set(redisKey, JSON.stringify(expenses), { EX: 120 });
+
+    res.status(200).json({ success: true, expenses });
+  } catch (error) {
+    console.error("Error fetching all expenses:", error);
+    res.status(500).json({
+      error: "Failed to fetch expenses",
+      message: error.message,
+    });
+  }
 });
