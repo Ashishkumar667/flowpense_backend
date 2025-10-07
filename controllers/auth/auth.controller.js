@@ -35,11 +35,31 @@ export const registerUser = asyncHandler(async (req, res) => {
             return res.status(400).json({ message: "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, and one number" });
         }
 
-     const existingUser = await prisma.user.findUnique({ where: { email } });
+    //  const existingUser = await prisma.user.findUnique({ where: { email } });
 
-     if (existingUser) {
-         return res.status(400).json({ message: "User already exists" });
-     }
+    //  if (existingUser) {
+    //      return res.status(400).json({ message: "User already exists" });
+    //  }
+
+    const normalizedMobile = mobileNumber.replace(/\D/g, '');
+
+    
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { mobile: normalizedMobile },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: existingUser.email === email
+          ? "Email already registered"
+          : "Mobile number already registered",
+      });
+    };
 
      const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -94,7 +114,7 @@ export const registerUser = asyncHandler(async (req, res) => {
         console.error("Error in registerUser:", error);
         return res.status(500).json({ message: "Internal Server error", error: error.message });
    }
-})
+});
 
 
 export const verifyEmail = asyncHandler(async(req, res) => {
