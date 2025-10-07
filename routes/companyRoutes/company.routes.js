@@ -20,7 +20,7 @@ router.post('/register', protectedRoutes, registerCompany);
 
 router.post('/upload-kyc',upload.array("docs", 5), protectedRoutes, uploadCompanyKyc);
 
-router.get('/:companyId', getCompanyDetails);
+router.get('/:companyId',protectedRoutes, getCompanyDetails);
 
 router.patch('/:companyId', protectedRoutes, updateCompany);
 

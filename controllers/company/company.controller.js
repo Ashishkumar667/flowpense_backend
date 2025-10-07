@@ -202,7 +202,18 @@ export const uploadCompanyKyc = asyncHandler(async(req, res) => {
 
 export const getCompanyDetails = asyncHandler(async( req, res) => {
     try {
+       const userId = req.user.id;
         const { companyId } = req.params;
+
+        const userAdmin = await prisma.user.findUnique({
+          where:{ id: userId}
+        });
+
+        if(userAdmin.role != "ADMIN"){
+          return res.status(403).json({
+            message:"Only Admin can access this routes"
+          })
+        }
 
         if(!companyId){
             return res.status(400).json({ error: "Company ID is required"});
@@ -241,7 +252,7 @@ export const getCompanyDetails = asyncHandler(async( req, res) => {
             return res.status(404).json({ error: "Company not found"});
         }
 
-        await redisClient(cachedKey, JSON.stringify(company), {EX:60});
+        await redisClient.set(cachedKey, JSON.stringify(company), {EX:60});
 
         res.status(200).json({ success: true, company });
     } catch (error) {
@@ -252,8 +263,20 @@ export const getCompanyDetails = asyncHandler(async( req, res) => {
 
 export const updateCompany = asyncHandler(async (req, res) => {
   try {
+    const userId = req.user.id;
+
     const { companyId } = req.params;
     const { name, rcNumber, tin, country } = req.body;
+
+       const userAdmin = await prisma.user.findUnique({
+          where:{ id: userId}
+        });
+
+        if(userAdmin.role != "ADMIN"){
+          return res.status(403).json({
+            message:"Only Admin can access this routes"
+          })
+        }
 
     const updatedCompany = await prisma.company.update({
       where: { id: parseInt(companyId) },
@@ -268,8 +291,10 @@ export const updateCompany = asyncHandler(async (req, res) => {
     await redisClient.del(`company_${companyId}`);
     
     res.status(200).json({ success: true, company: updatedCompany });
+
   } catch (err) {
     console.error(err);
+
     res.status(500).json({ error: "Failed to update company" });
   }
 });
