@@ -108,9 +108,9 @@ export const getPendingApprovals = asyncHandler(async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        if (!["ADMIN", "TEAMLEAD"].includes(user.role)) {
-              return res.status(403).json({ error: "Only admin and team lead users can access pending approvals" });
-          }
+        // if (!["ADMIN", "TEAMLEAD"].includes(user.role)) {
+        //       return res.status(403).json({ error: "Only admin and team lead users can access pending approvals" });
+        //   }
 
         const pendingExpenses = await prisma.cardExpense.findMany({
             where: { 
@@ -140,9 +140,9 @@ export const getApprovedExpenses = asyncHandler(async(req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (!["ADMIN", "TEAMLEAD"].includes(user.role)) {
-      return res.status(403).json({ error: "Only approvers (ADMIN/TEAMLEAD) can access approved expenses" });
-    }
+    // if (!["ADMIN", "TEAMLEAD"].includes(user.role)) {
+    //   return res.status(403).json({ error: "Only approvers (ADMIN/TEAMLEAD) can access approved expenses" });
+    // }
 
     const approvedExpenses = await prisma.cardExpense.findMany({
       where: { 

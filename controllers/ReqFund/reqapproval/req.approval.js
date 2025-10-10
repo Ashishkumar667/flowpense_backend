@@ -1,6 +1,9 @@
 import prisma from "../../../config/db.js";
 import asyncHandler from "express-async-handler";
 import { sendEmail } from "../../../utils/email/email.js";
+import {
+  SendingNotification
+} from '../../../utils/Notification/Notification.js';
 
 export const approveCardFunding = asyncHandler(async (req, res) => {
   try {
@@ -78,6 +81,26 @@ export const approveCardFunding = asyncHandler(async (req, res) => {
         <p>– The Flowpense Team</p>
         `
       );
+    }
+
+    if(fundingRequest.status === "APPROVED"){
+          console.log("Sending notifications to requester");
+      
+         const sentNotification = await SendingNotification(
+            approvers.id,
+            `Your funding request for card ${fundingRequest.card} has been approved.`
+          );
+      
+          console.log("Notification sent:", sentNotification);
+    }else{
+      console.log("Sending notifications to requester");
+      
+         const sentNotification = await SendingNotification(
+            approvers.id,
+            `Your funding request for card ${fundingRequest.card} has been Rejected.`
+          );
+      
+          console.log("Notification sent:", sentNotification);
     }
 
     return res.status(200).json({

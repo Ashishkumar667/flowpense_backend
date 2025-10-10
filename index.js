@@ -16,6 +16,7 @@ import userKYCRoutes from './routes/userKYCRoutes/user.kyc.routes.js';
 import reqFundCardRoutes from './routes/ReqForFundingRoutes/req.fund.js';
 import approvalReqRoutes from './routes/ReqForFundingRoutes/approvalRoutes/req.approval.routes.js';
 import bankRoutes from './routes/BankRoutes/bank.routes.js';
+import notificationRoutes from './routes/notification/notification.js';
 import cors from 'cors';
 const app = express();
 
@@ -84,6 +85,8 @@ app.use('/api/companies', companyRoutes);
 app.use('/wallet', walletRoutes);
 
 app.use('/auth', googleSignInRoutes);
+
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req, res) => {
     res.json({message: "Welcome to Flowpense API"});

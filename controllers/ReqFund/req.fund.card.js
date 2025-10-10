@@ -3,6 +3,9 @@ import asyncHandler from "express-async-handler";
 import {
     sendRequestForCradFunding
 } from '../../utils/email/emailtemplate/email.template.js';
+import {
+  SendingNotification
+} from '../../utils/Notification/Notification.js';
 
 export const reqForCardFunding = asyncHandler(async (req, res) => {
   try {
@@ -36,9 +39,9 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
       });
     }
 
-    if (user.role === "EMPLOYEE") {
+    if (user.role === "ADMIN") { //employee -> admin
       return res.status(403).json({
-        error: "Only Admins or TeamLeads can request card funding",
+        error: "Only Employee or TeamLeads can request card funding",
       });
     }
 
@@ -54,7 +57,7 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
     const approvers = await prisma.user.findMany({
       where: {
         companyId: card.companyId,
-        role: { in: ["ADMIN", "SUPERADMIN"] },
+        role: { in: ["ADMIN"] }, //, "SUPERADMIN"
       },
       select: { email: true, firstName: true },
     });
@@ -68,7 +71,15 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
         card.CardName,
         card.TeamName
       );
-    }
+    };
+    console.log("Sending notifications to approver");
+
+   const sentNotification = await SendingNotification(
+      approvers.id,
+      `Your funding request for card ${card.CardName} has been submitted and is pending approval.`
+    );
+
+    console.log("Notification sent:", sentNotification);
     return res.status(201).json({
       success: true,
       message: "Funding request submitted successfully",

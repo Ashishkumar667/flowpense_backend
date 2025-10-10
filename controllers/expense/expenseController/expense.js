@@ -133,8 +133,8 @@ export const getExpenses = asyncHandler(async (req, res) => {
         });
 
 
-    if (user.role !== "ADMIN")
-      return res.status(403).json({ error: "Only admin users can access expense data" });
+    // if (user.role !== "ADMIN")
+    //   return res.status(403).json({ error: "Only admin users can access expense data" });
 
     const redisKey = `expenses:card:${cardId}`;
     const cachedExpenses = await redisClient.get(redisKey);

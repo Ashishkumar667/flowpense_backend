@@ -126,9 +126,9 @@ export const getCardById = asyncHandler(async(req, res) => {
         if (!user){
             return res.status(404).json({ error: "User not found" });
         }
-        if(user.role !== "ADMIN"){
-            return res.status(403).json({ error: "Only admin users can access card details" });
-        }
+        // if(user.role !== "ADMIN"){
+        //     return res.status(403).json({ error: "Only admin users can access card details" });
+        // }
         if(!cardId){
             return res.status(400).json({ error: "Card ID is required" });
         }
