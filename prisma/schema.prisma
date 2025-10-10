@@ -43,6 +43,7 @@ model User {
   userKyc       UserKyc[]
   cardFundingRequest  CardFundingRequest[]  
   companyKycReviewed          CompanyKyc[]    @relation("ReviewedKycs")  
+  notification         Notification[]
 }
 
 model Otp {
@@ -224,12 +225,12 @@ model CardFundingRequest {
   createdAt DateTime @default(now())
 }
 
-model notification {
+model Notification {
   id        Int       @id @default(autoincrement())
   userId    Int 
-  user      User      @realtion(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
   message   String
-  read      Boolean   @default("false")
+  read      Boolean   @default(false)
   createdAt DateTime  @default(now()) 
 }
 
