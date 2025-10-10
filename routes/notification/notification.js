@@ -1,6 +1,5 @@
 import express from "express";
 import { protectedRoutes } from "../../middleware/authMiddleware.js";
-import { getNotification } from "../../controllers/Notification/notification.js";
 import {
     getNotification,
     markedNotification
