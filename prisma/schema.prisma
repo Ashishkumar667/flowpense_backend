@@ -223,3 +223,13 @@ model CardFundingRequest {
   status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
   createdAt DateTime @default(now())
 }
+
+model notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int 
+  user      User      @realtion(fields: [userId], references: [id])
+  message   String
+  read      Boolean   @default("false")
+  createdAt DateTime  @default(now()) 
+}
+

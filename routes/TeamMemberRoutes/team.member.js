@@ -27,6 +27,6 @@ router.post('/add-member/:teamId', protectedRoutes, addEmployeeToTeam);
 
 router.post('/add-employee', protectedRoutes, addEmployeeToCompany);
 
-router.post('/get-employee', protectedRoutes, getAllEmployee);
+router.get('/get-employee', protectedRoutes, getAllEmployee);
 
 export default router;

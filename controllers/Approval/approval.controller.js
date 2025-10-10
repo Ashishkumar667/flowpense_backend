@@ -103,6 +103,8 @@ export const getPendingApprovals = asyncHandler(async (req, res) => {
             where: { id: userId }
         });
 
+        // console.log("UserId approvals", user);
+        // console.log("company id for approvals path", user.companyId);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }

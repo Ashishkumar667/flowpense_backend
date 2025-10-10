@@ -392,6 +392,7 @@ export const getUserProfile = asyncHandler(async(req, res) => {
                   mobile: true,
                   role: true,
                   isVerified: true,
+                  companyId:true,
                   mfaEnabled: true,
                   createdAt: true, 
             
