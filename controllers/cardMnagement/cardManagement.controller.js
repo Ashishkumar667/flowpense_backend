@@ -299,48 +299,115 @@ export const transactionHistory = asyncHandler(async(req, res) => {
     }
 });
 
-export const deleteCard = asyncHandler(async(req, res) => {
-    try {
-        const userId = req.user.id;
-        const companyId = req.user.companyId;
-        const { cardId } = req.params;
-        const user = await prisma.user.findUnique({
-            where: { id: userId}
+// export const deleteCard = asyncHandler(async(req, res) => {
+//     try {
+//         const userId = req.user.id;
+//         const companyId = req.user.companyId;
+//         const { cardId } = req.params;
+//         const user = await prisma.user.findUnique({
+//             where: { id: userId}
+//         });
+
+//         if (!user){
+//             return res.status(404).json({ error: "User not found" });
+//         }   
+
+//         if(user.role !== "ADMIN"){
+//             return res.status(403).json({ error: "Only admin users can delete cards" });
+//         }
+
+//         if(user.companyId !== companyId){
+//             return res.status(403).json({ error: "You can only delete cards within your company" });
+//         }
+
+//         if(!cardId){
+//             return res.status(400).json({ error: "Card ID is required" });
+//         }
+
+//         const card = await prisma.card.findUnique({
+//             where: { id: parseInt(cardId) }
+//         });
+
+//         if(!card){
+//             return res.status(404).json({ error: "Card not found" });
+//         }
+
+//         await prisma.card.delete({
+//             where: { id: parseInt(cardId) }
+//         });
+
+//         await redisClient.del('all_cards');
+
+//         res.status(200).json({ success: true,message:"Card deleted successfully" });
+//     } catch (error) {
+//         console.log("Error in deleting card:", error);
+//         res.status(500).json({ error: "Failed to delete card" , message:error.message});
+//     }   
+// });
+
+export const deleteCard = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const companyId = req.user.companyId;
+    const { cardId } = req.params;
+
+    if (!cardId) {
+      return res.status(400).json({ error: "Card ID is required" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Only admin users can delete cards" });
+    }
+
+    const card = await prisma.card.findUnique({
+      where: { id: parseInt(cardId) },
+    });
+
+    if (!card) {
+      return res.status(404).json({ error: "Card not found" });
+    }
+
+    if (card.companyId !== companyId) {
+      return res.status(403).json({ error: "You can only delete cards within your company" });
+    }
+
+    const expenseCount = await prisma.cardExpense.count({
+      where: { cardId: parseInt(cardId) },
+    });
+
+    if (expenseCount > 0) {
+       await prisma.cardExpense.deleteMany({
+        where: { cardId: parseInt(cardId) },
         });
+    }
 
-        if (!user){
-            return res.status(404).json({ error: "User not found" });
-        }   
+    
+    await prisma.cardFundingRequest.deleteMany({
+      where: { cardId: parseInt(cardId) },
+    });
 
-        if(user.role !== "ADMIN"){
-            return res.status(403).json({ error: "Only admin users can delete cards" });
-        }
+    await prisma.card.delete({
+      where: { id: parseInt(cardId) },
+    });
 
-        if(user.companyId !== companyId){
-            return res.status(403).json({ error: "You can only delete cards within your company" });
-        }
+    await redisClient.del('all_cards');
+    await redisClient.del(`expenses:card:${cardId}`);
+    await redisClient.del(`transactions_${cardId}`);
 
-        if(!cardId){
-            return res.status(400).json({ error: "Card ID is required" });
-        }
-
-        const card = await prisma.card.findUnique({
-            where: { id: parseInt(cardId) }
-        });
-
-        if(!card){
-            return res.status(404).json({ error: "Card not found" });
-        }
-
-        await prisma.card.delete({
-            where: { id: parseInt(cardId) }
-        });
-
-        await redisClient.del('all_cards');
-
-        res.status(200).json({ success: true,message:"Card deleted successfully" });
-    } catch (error) {
-        console.log("Error in deleting card:", error);
-        res.status(500).json({ error: "Failed to delete card" , message:error.message});
-    }   
+    res.status(200).json({
+      success: true,
+      message: "Card deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error in deleting card:", error);
+    res.status(500).json({
+      error: "Failed to delete card",
+      message: error.message,
+    });
+  }
 });
