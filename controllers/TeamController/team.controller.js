@@ -135,6 +135,11 @@ export const deleteTeam = asyncHandler(async (req, res) => {
         if (team.companyId !== user.companyId) {
             return res.status(403).json({ error: "You can only delete teams within your company" });
         }
+        if(team.TotalMembers > 0){      //deleting team members if exist to avoid foreign key issue in prisma
+          await prisma.teamMember.deleteMany({
+              where: { teamId: parseInt(teamId) }
+          });
+      }
 
         await prisma.team.delete({
             where: { id: parseInt(teamId) }
