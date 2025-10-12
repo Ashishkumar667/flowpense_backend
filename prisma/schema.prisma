@@ -44,6 +44,7 @@ model User {
   cardFundingRequest  CardFundingRequest[]  
   companyKycReviewed          CompanyKyc[]    @relation("ReviewedKycs")  
   notification         Notification[]
+  bank                 Bank[]
 }
 
 model Otp {
@@ -234,3 +235,12 @@ model Notification {
   createdAt DateTime  @default(now()) 
 }
 
+model Bank {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  AccountNumber    Int    
+  BankCode         String
+  country          String
+  createdAt DateTime  @default(now())      
+}

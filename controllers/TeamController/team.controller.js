@@ -4,6 +4,9 @@ import redisClient from '../../config/cache/redis.js';
 import {
   sendEmailToEmployee
 } from '../../utils/email/emailtemplate/email.template.js';
+import {
+  SendingNotification
+} from '../../utils/Notification/Notification.js';
 
 export const Createteam = asyncHandler(async (req, res) => {
     try {
@@ -87,7 +90,7 @@ export const getTeam = asyncHandler(async (req, res) => {
           }
         }
       }
-    });
+    }); //add team menbers details as well
 
     await redisClient.set(redisKey, JSON.stringify(teams), { EX: 120 });
 
@@ -284,6 +287,11 @@ export const addEmployeeToTeam = asyncHandler(async (req, res) => {
       where: { id: team.id },
       data: { TotalMembers:{ increment: 1} },
     });
+
+    await SendingNotification(
+      employeeId,
+      `You have been added to the team: ${team.TeamName} in company: ${user.companyId}`
+    );
 
     await redisClient.del(`company_${user.companyId}_teams`);
 
