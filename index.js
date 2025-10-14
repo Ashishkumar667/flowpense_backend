@@ -36,6 +36,7 @@ app.use(express.json());
 const allowedOrigins =[
   process.env.FRONTEND_URL,
   "http://localhost:3000",
+  "https://flowpense.vercel.app",
 ]  
 
 const corsOptions = {

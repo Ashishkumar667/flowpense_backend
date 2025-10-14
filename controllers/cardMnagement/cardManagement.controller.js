@@ -23,13 +23,20 @@ export const createCardController = asyncHandler(async(req, res) => {
         const { cardType, cardName, cardHolder, approver, teamName, dailySpendLimit, weeklySpendLimit, monthlyLimit, perTransactionLimit, cardFunding, blockedCategory } = req.body;
 
         const user = await prisma.user.findUnique({
-            where: { id: userId}
+            where: { id: userId},
+            select: { id: true, companyId: true },
         })
+
 
         if (!user){
             return res.status(404).json({ error: "User not found" });
         }
 
+        if (!user.companyId) {
+            return res.status(400).json({ error: "User is not associated with any company" });
+        }
+        const companyId = user.companyId;
+        
         if(user.role !== "ADMIN"){
             return res.status(403).json({ error: "Only admin users can create cards" });
         }
@@ -61,7 +68,7 @@ export const createCardController = asyncHandler(async(req, res) => {
 
         await cardCreationEmailTemplate(user.email, user.firstName, cardName, CardNumber, cardType);
 
-        await redisClient.del('all_cards');
+        await redisClient.del(`all_cards_company_${companyId}`);
 
         res.status(200).json({ success: true,message:"Card created successfully", card });
 
@@ -71,49 +78,65 @@ export const createCardController = asyncHandler(async(req, res) => {
     }
 });
 
-export const getAllcards = asyncHandler(async(req, res) => {
-    try {
-        const userId = req.user.id;
+export const getAllcards = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.id;
 
-        const user = await prisma.user.findUnique({
-            where: { id: userId}
-        })
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, companyId: true },
+    });
 
-        if (!user){
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        if(user.role !== "ADMIN"){
-            return res.status(403).json({ error: "Only admin users can access cards" });
-        };
-
-        const cachedData = await redisClient.get('all_cards');
-        console.log("cachedmresult...", cachedData);
-            if (cachedData) {
-                const parsedCards = JSON.parse(cachedData);
-                  console.log('⚡ Returning cards from Redis cache');
-                  return res.status(200).json({
-                       success: true,
-                       message: "Cards fetched from cache",
-                       cards: JSON.parse(cachedData),
-                       TotalCrds: parsedCards.length,
-            });
-        }
-
-        const cards = await prisma.card.findMany();
-        const totalCards = cards.length;
-        if(cards.length != 0){
-            console.log('📦 Fetched from DB, caching result...');
-            await redisClient.set('all_cards', JSON.stringify(cards), { EX: 60 });
-        };
-
-        console.log("Total cards:", totalCards); //debug purpose
-
-        res.status(200).json({ success: true,message:"Cards fetched successfully", cards, totalCards });
-    } catch (error) {
-        console.log("Error in fetching cards:", error);
-        res.status(500).json({ error: "Failed to fetch cards" , message:error.message});
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
+
+    if (!user.companyId) {
+      return res.status(400).json({ error: "User is not associated with any company" });
+    }
+
+    const companyId = user.companyId;
+    const cacheKey = `all_cards_company_${companyId}`;
+
+    const cachedData = await redisClient.get(cacheKey);
+    if (cachedData) {
+      const parsedCards = JSON.parse(cachedData);
+      console.log("⚡ Returning company cards from Redis cache");
+      return res.status(200).json({
+        success: true,
+        message: "Cards fetched from cache",
+        cards: parsedCards,
+        totalCards: parsedCards.length,
+      });
+    }
+
+    const cards = await prisma.card.findMany({
+      where: { companyId },
+      orderBy: { id: "desc" },
+    });
+
+    const totalCards = cards.length;
+
+    if (cards.length > 0) {
+      console.log("📦 Fetched from DB, caching company cards...");
+      await redisClient.set(cacheKey, JSON.stringify(cards), { EX: 60 });
+    }
+
+    console.log(`Total cards for company ${companyId}:`, totalCards);
+
+    res.status(200).json({
+      success: true,
+      message: "Cards fetched successfully",
+      cards,
+      totalCards,
+    });
+  } catch (error) {
+    console.error("Error fetching cards:", error);
+    res.status(500).json({
+      error: "Failed to fetch cards",
+      message: error.message,
+    });
+  }
 });
 
 export const getCardById = asyncHandler(async(req, res) => {
@@ -167,11 +190,19 @@ export const blockUnblockCard = asyncHandler(async(req, res) => {
         const { action } = req.body; // 'Active' or 'frozen'
 
         const user = await prisma.user.findUnique({
-            where: { id: userId}
+            where: { id: userId},
+            select: { id: true, companyId: true },
         });
+
         if (!user){
             return res.status(404).json({ error: "User not found" });
         }
+        
+         if (!user.companyId) {
+            return res.status(400).json({ error: "User is not associated with any company" });
+        }
+
+         const companyId = user.companyId;
         if(user.role !== "ADMIN"){
             return res.status(403).json({ error: "Only admin users can Activate/deactivate cards" });
         }
@@ -195,7 +226,7 @@ export const blockUnblockCard = asyncHandler(async(req, res) => {
             data: { status: action }
         });
 
-        await redisClient.del('all_cards');
+        await redisClient.del(`all_cards_company_${companyId}`);
 
         res.status(200).json({ success: true,message:`Card ${action} successfully`, card: updatedCard });
     } catch (error) {
@@ -210,8 +241,12 @@ export const editCardLimits = asyncHandler(async(req, res) => {
         const { cardId } = req.params;
         const { dailySpendLimit, weeklySpendLimit, monthlyLimit, perTransactionLimit } = req.body;  
         const user = await prisma.user.findUnique({
-            where: { id: userId}
+            where: { id: userId},
+            select: { id: true, companyId: true },
         });
+
+        const companyId = user.companyId;
+
         if (!user){
             return res.status(404).json({ error: "User not found" });
         }
@@ -242,7 +277,7 @@ export const editCardLimits = asyncHandler(async(req, res) => {
             }
         }); 
 
-        await redisClient.del('all_cards');
+        await redisClient.del(`all_cards_company_${companyId}`);
         res.status(200).json({ success: true,message:"Card limits updated successfully", card: updatedCard });
     } catch (error) {
         console.log("Error in editing card limits:", error);
@@ -395,7 +430,7 @@ export const deleteCard = asyncHandler(async (req, res) => {
       where: { id: parseInt(cardId) },
     });
 
-    await redisClient.del('all_cards');
+    await redisClient.del(`all_cards_company_${companyId}`);
     await redisClient.del(`expenses:card:${cardId}`);
     await redisClient.del(`transactions_${cardId}`);
 
