@@ -32,7 +32,8 @@ export const protectedRoutes = asyncHandler(async (req, res, next) => {
         email: decoded.email,
         role: decoded.role,
         companyId: decoded.companyId,
-        mfaEnabled: user.mfaEnabled, 
+        mfaEnabled: user.mfaEnabled,
+        platform: 'web'  // remove this  -> only for web for now 
       };
       console.log("User from DB:", user);
 
@@ -54,11 +55,18 @@ export const protectedRoutes = asyncHandler(async (req, res, next) => {
       console.log("MFA Enabled:", user.mfaEnabled, "Is Allowed:", isAllowed);
       console.log("Request Path:", req.path);
 
-      if (!user.mfaEnabled && !isAllowed) {
+      if(req.user.platform === 'mobile'){     //remove this -> only for web for now
+        return next();if (!user.mfaEnabled && !isAllowed) {
         return res.status(403).json({
           message: "MFA must be enabled before accessing this resource",
         });
       }
+      }
+      // if (!user.mfaEnabled && !isAllowed) {
+      //   return res.status(403).json({
+      //     message: "MFA must be enabled before accessing this resource",
+      //   });
+      // }
 
       return next();
           
