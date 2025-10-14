@@ -27,13 +27,15 @@ export const protectedRoutes = asyncHandler(async (req, res, next) => {
         return res.status(401).json({ message: "User not found" });
       }
 
+      const platform = (req.headers["platform"] || "mobile").toLowerCase();;
+
       req.user = {
         id: decoded.userId,
         email: decoded.email,
         role: decoded.role,
         companyId: decoded.companyId,
         mfaEnabled: user.mfaEnabled,
-        platform: 'web'  // remove this  -> only for web for now 
+        platform,  // remove this  -> only for web for now 
       };
       console.log("User from DB:", user);
 
