@@ -56,7 +56,7 @@ export const protectedRoutes = asyncHandler(async (req, res, next) => {
       console.log("Request Path:", req.path);
 
       if(req.user.platform === 'mobile'){     //remove this -> only for web for now
-        return next();if (!user.mfaEnabled && !isAllowed) {
+        if (!user.mfaEnabled && !isAllowed) {
         return res.status(403).json({
           message: "MFA must be enabled before accessing this resource",
         });
