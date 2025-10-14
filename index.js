@@ -49,7 +49,7 @@ const corsOptions = {
       }
     },
     methods: ['GET', 'PUT', 'POST', 'DELETE','PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'platform'],
     exposedHeaders: ['Authorization'],
     credentials: true,
 }
