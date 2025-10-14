@@ -19,7 +19,11 @@ export const expenseController = asyncHandler(async (req, res) => {
           where: { id: userId } 
       });
 
-
+    
+    if(user.companyId != req.user.companyId){
+      return res.status(403).json({ error: "You can only add expenses within your company" });
+    }
+    
     if (!user) return res.status(404).json({ 
              error: "User not found"
      });
@@ -171,7 +175,9 @@ export const getExpenses = asyncHandler(async (req, res) => {
 export const getAllExpenses = asyncHandler(async (req, res) => {
   try {
     const userId = req.user.id;
-    const companyId = req.user.companyId;
+    const companyId = Number(req.user.companyId);
+
+    console.log("User ID:", userId, "Company ID:", companyId);
 
     const user = await prisma.user.findUnique({ 
       where: { id: userId } 
@@ -202,10 +208,34 @@ export const getAllExpenses = asyncHandler(async (req, res) => {
     
     const expenses = await prisma.cardExpense.findMany({
       where: {
-        card: { companyId: companyId },
+        card: {
+          companyId: companyId,
+        },
       },
-      orderBy: { createdAt: "desc" },
+      include: {
+        card: {
+          select: {
+            id: true,
+            CardName: true,
+            companyId: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
+
+    console.log(` Found ${expenses.length} expenses for company ${companyId}`);
+
 
     await redisClient.set(redisKey, JSON.stringify(expenses), { EX: 120 });
 

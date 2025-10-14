@@ -19,12 +19,13 @@ const generateCardNumber = () => {
 export const createCardController = asyncHandler(async(req, res) => {
     try {
         const userId = req.user.id;
+        const companyId = req.user.companyId;
 
         const { cardType, cardName, cardHolder, approver, teamName, dailySpendLimit, weeklySpendLimit, monthlyLimit, perTransactionLimit, cardFunding, blockedCategory } = req.body;
 
         const user = await prisma.user.findUnique({
             where: { id: userId},
-            select: { id: true, companyId: true },
+            select:{ id: true, companyId: true }
         })
 
 
@@ -35,8 +36,11 @@ export const createCardController = asyncHandler(async(req, res) => {
         if (!user.companyId) {
             return res.status(400).json({ error: "User is not associated with any company" });
         }
-        const companyId = user.companyId;
         
+        if(user.companyId != companyId){
+            return res.status(403).json({ error: "You can only create cards within your company" });
+        }
+
         if(user.role !== "ADMIN"){
             return res.status(403).json({ error: "Only admin users can create cards" });
         }
@@ -78,65 +82,51 @@ export const createCardController = asyncHandler(async(req, res) => {
     }
 });
 
-export const getAllcards = asyncHandler(async (req, res) => {
-  try {
-    const userId = req.user.id;
+export const getAllcards = asyncHandler(async(req, res) => {
+    try {
+        const userId = req.user.id;
+        const companyId = req.user.companyId;
+        const user = await prisma.user.findUnique({
+            where: { id: userId}
+        })
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, companyId: true },
-    });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+        if (!user){
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const cards = await prisma.card.findMany({
+            where: { companyId: user.companyId }
+        });
+        console.log("Fetched Cards:", cards);
+
+        // if(user.role !== "ADMIN"){
+        //     return res.status(403).json({ error: "Only admin users can access cards" });
+        // };
+
+        const cachedData = await redisClient.get(`all_cards_company_${companyId}`);
+        console.log("cached result...", cachedData);
+            if (cachedData) {
+                const parsedCards = JSON.parse(cachedData);
+                  console.log('⚡ Returning cards from Redis cache');
+                  return res.status(200).json({
+                       success: true,
+                       message: "Cards fetched from cache",
+                       cards: JSON.parse(cachedData),
+                       TotalCrds: parsedCards.length,
+            });
+        }
+        const totalCards = cards.length;
+        // if(cards.length != 0){
+        //     console.log('📦 Fetched from DB, caching result...');
+        //     // await redisClient.set(`all_cards_company_${companyId}`, JSON.stringify(cards), { EX: 60 });
+        // };
+        await redisClient.set(`all_cards_company_${companyId}`, JSON.stringify(cards), { EX: 60 });
+        res.status(200).json({ success: true,message:"Cards fetched successfully", cards, totalCards });
+    } catch (error) {
+        console.log("Error in fetching cards:", error);
+        res.status(500).json({ error: "Failed to fetch cards" , message:error.message});
     }
-
-    if (!user.companyId) {
-      return res.status(400).json({ error: "User is not associated with any company" });
-    }
-
-    const companyId = user.companyId;
-    const cacheKey = `all_cards_company_${companyId}`;
-
-    const cachedData = await redisClient.get(cacheKey);
-    if (cachedData) {
-      const parsedCards = JSON.parse(cachedData);
-      console.log("⚡ Returning company cards from Redis cache");
-      return res.status(200).json({
-        success: true,
-        message: "Cards fetched from cache",
-        cards: parsedCards,
-        totalCards: parsedCards.length,
-      });
-    }
-
-    const cards = await prisma.card.findMany({
-      where: { companyId },
-      orderBy: { id: "desc" },
-    });
-
-    const totalCards = cards.length;
-
-    if (cards.length > 0) {
-      console.log("📦 Fetched from DB, caching company cards...");
-      await redisClient.set(cacheKey, JSON.stringify(cards), { EX: 60 });
-    }
-
-    console.log(`Total cards for company ${companyId}:`, totalCards);
-
-    res.status(200).json({
-      success: true,
-      message: "Cards fetched successfully",
-      cards,
-      totalCards,
-    });
-  } catch (error) {
-    console.error("Error fetching cards:", error);
-    res.status(500).json({
-      error: "Failed to fetch cards",
-      message: error.message,
-    });
-  }
 });
 
 export const getCardById = asyncHandler(async(req, res) => {
