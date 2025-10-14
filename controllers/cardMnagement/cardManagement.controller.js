@@ -25,7 +25,7 @@ export const createCardController = asyncHandler(async(req, res) => {
 
         const user = await prisma.user.findUnique({
             where: { id: userId},
-            select:{ id: true, companyId: true }
+            select:{ id: true, companyId: true, role: true }
         })
 
 
