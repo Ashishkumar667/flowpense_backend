@@ -412,4 +412,59 @@ export const getAllEmployee = asyncHandler(async(req, res) => {
     console.error("Error getting employee :", error);
     res.status(500).json({ error: "Failed to get employee", message: error.message });
   }
-})
+});
+
+
+export const updateEmployeeCompanyId = asyncHandler(async(req, res) => {
+  try{
+    const adminId = req.user.id;
+
+    const { employeeId } = req.params;
+    
+    console.log("EmployeeId:", employeeId);
+    const employeedata = await prisma.employeeData.findUnique({
+      where: { id: parseInt(employeeId)}
+    });
+
+    console.log("EmployeeData:", employeedata);
+    
+    if(!employeedata){
+      return res.status(404).json({
+        message:"Employee not found"
+      });
+    };
+
+    const user = await prisma.user.findUnique({
+      where: { email: employeedata.email },
+    });
+
+    if(!user){
+      return res.status(404).json({
+        message:"Employee did not register with this email"
+      });
+    };
+
+    if(user.companyId !== null){
+      return res.status(400).json({
+        message:"Employee is already associated with a company"
+      });
+    }
+
+    if(user.role == "EMPLOYEE" || user.role == "TEAMLEADER"){
+      if(employeedata.companyId === req.user.companyId){
+        await prisma.user.update({
+        where: {id: user.id},
+        data: {
+          companyId: employeedata.companyId
+        }
+      });
+      }
+    }
+    res.status(200).json({
+      message:"Employee companyId updated successfully"
+    })
+  }catch(error){
+    console.error("Error updating employee companyId :", error);
+    res.status(500).json({ error: "Failed to update employee companyId", message: error.message });
+  }
+});

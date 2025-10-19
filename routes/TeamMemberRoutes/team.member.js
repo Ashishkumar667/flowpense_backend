@@ -10,7 +10,8 @@ import {
     updateTeam,
     addEmployeeToTeam,
     addEmployeeToCompany,
-    getAllEmployee
+    getAllEmployee,
+    updateEmployeeCompanyId
 } from '../../controllers/TeamController/team.controller.js';
 
 const router = express.Router();
@@ -28,5 +29,7 @@ router.post('/add-member/:teamId', protectedRoutes, addEmployeeToTeam);
 router.post('/add-employee', protectedRoutes, addEmployeeToCompany);
 
 router.get('/get-employee', protectedRoutes, getAllEmployee);
+
+router.put('/update/employee/companyId/:employeeId', protectedRoutes, updateEmployeeCompanyId);
 
 export default router;

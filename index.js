@@ -5,7 +5,7 @@ import authRoutes from './routes/authRoutes/authRoutes.js';
 import mfaRoutes from './routes/mfaRoutes/2faroutes.js';
 import companyRoutes from './routes/companyRoutes/company.routes.js';
 import walletRoutes from './routes/walletRoutes/wallet.routes.js';
-import { paystackwebhook } from './controllers/wallet/wallet.controller.js';
+import { pagaWebhook } from './controllers/wallet/wallet.controller.js';
 import googleSignInRoutes from './routes/googleSignin/google.signin.js';
 import cardManagementRoutes from './routes/cardManagementRoutes/card.management.routes.js';
 import expenseRoutes from './routes/ExpenseRoutes/expense.routes.js';
@@ -25,9 +25,9 @@ const port = process.env.PORT || 3000;
 
 //for webhook
 app.post(
-  "/api/flowpense/paystack/webhook",
+  "/api/flowpense/paga/webhook",
   express.raw({ type: "application/json" }),
-  paystackwebhook
+  pagaWebhook
 );
 
 app.use(express.json());

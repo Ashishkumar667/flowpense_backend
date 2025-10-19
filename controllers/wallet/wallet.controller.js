@@ -1,174 +1,196 @@
 import asyncHandler from "express-async-handler";
-import { paystack } from '../../provider/paystack/paystack.js';
+import { paga } from "../../provider/Paga/paga.js";
+import {
+  pagaPersistentPayment,
+} from "../../provider/Paga/persistentPagaPayment/paga.js";
 import {
   topupWalletService,
   getWalletLedgerService,
 } from "./wallet.service.js";
+import  prisma  from "../../config/db.js";
+import crypto from 'crypto'
 
-//paystack
-export const topupWallet = asyncHandler(async (req, res) => {
+//paga
+export const createPersistentPayment = asyncHandler(async (req, res) => {
   try {
-    const { companyId, amount, email, currency } = req.body;
+    const { companyId, amount, email, currency } = req.body; 
 
-    if (!companyId || !amount || !email) {
-      return res.status(400).json({ error: "companyId, amount, and email are required" });
+    if (!companyId || !email) {
+      return res.status(400).json({ error: "companyId and email are required" });
     }
 
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({ error: "Only admins can top up the wallet" });
     }
-    console.log("Decoded User:", req.user);
-    
+
     if (req.user.companyId !== parseInt(companyId)) {
       return res.status(403).json({ error: "You cannot top up another company's wallet" });
     }
 
-    console.log("Initiating Paystack Transaction for:", { companyId, amount, email, currency });
-    const response = await paystack.post("/transaction/initialize", {
-      email,
-      amount: Math.round(amount * 100),
-      currency: currency || "NGN",
-      metadata: { companyId: companyId.toString() },
-      callback_url: `${process.env.CLIENT_URL}/payment/callback`,
-    });
-    console.log("Paystack Initialization Response:", response.data);
+    const user = await prisma.user.findUnique({ 
+      where: { id: req.user.id }
+     });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    return res.status(200).json({
-      success: true,
-      authorization_url: response.data.data.authorization_url,
-      reference: response.data.data.reference,
+    const referenceNumber = `${companyId}-${Date.now()}`;
+
+
+    let response;
+      const body = {
+        referenceNumber,
+        accountName: `${user.firstName} ${user.lastName}`,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        accountReference:referenceNumber || "123467891334",
+        phoneNumber: user.mobile,
+        callbackUrl: process.env.WEBHOOK_URL || "http://localhost:9091/test-callback",
+      };
+
+      console.log("Paga Request Body:", body);
+      response = await pagaPersistentPayment.post("/registerPersistentPaymentAccount", body);
+    
+
+    console.log(" Paga Response:", response.data);
+    return res.status(200).json({ 
+      success: true, 
+      data: response.data 
     });
   } catch (error) {
-    console.error("Error in Payment", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to initialize payment" });
+    console.error(" Error in Payment:", error.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.response?.data?.message || "Failed to initialize payment with Paga",
+    });
   }
 });
 
-// export const topupWallet = asyncHandler(async (req, res) => {
-//   try {
-//     //const userId = req.user.id;
-//     const { companyId, amount, currency } = req.body;
 
-//   if (!companyId || !amount) {
-//     return res.status(400).json({ error: "companyId and amount are required" });
-//   }
-//   console.log("Decoded User:", req.user);
-      
-//     if (req.user.role !== "ADMIN" && req.user.role !== "SUPERADMIN") {
-//       return res.status(403).json({ error: "Only admins can top up the wallet" });
-//     }
-    
-//     if (req.user.companyId !== parseInt(companyId)) {
-//       return res.status(403).json({ error: "You cannot top up another company's wallet" });
-//     }
-    
-
-//   const session = await stripe.checkout.sessions.create({
-//     payment_method_types: ["card"],
-//     line_items: [
-//       {
-//         price_data: {
-//           currency: currency || "usd",
-//           product_data: {
-//             name: `Wallet Top-up for Company ${companyId}`,
-//           },
-//           unit_amount: Math.round(amount * 100), // cents
-//         },
-//         quantity: 1,
-//       },
-//     ],
-//     mode: "payment",
-//     success_url: `${process.env.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-//     cancel_url: `${process.env.CLIENT_URL}/cancel`,
-//     metadata: { companyId: companyId.toString() },
-//   });
-
-//   res.status(200).json({ success: true, sessionId: session.id, url: session.url });
-// }
-//   catch(error){
-//     console.log("Error in Payment",  error.message);
-//     res.status(500).json({
-
-//     })
-//   }
-// });
-
-// //webhook
-// export const stripeWebhook = asyncHandler(async (req, res) => {
-//   let event;
-//   try {
-//     const sig = req.headers["stripe-signature"];
-//     event = stripe.webhooks.constructEvent(
-//       req.body,
-//       sig,
-//       process.env.STRIPE_WEBHOOK_SECRET
-//     );
-//   } catch (err) {
-//     console.error("Webhook signature verification failed.", err.message);
-//     return res.status(400).send(`Webhook Error: ${err.message}`);
-//   }
-
-//   // if (event.type === "payment_intent.succeeded") {
-//   //   const paymentIntent = event.data.object;
-//   //   const companyId = parseInt(paymentIntent.metadata.companyId);
-//   //   const amount = paymentIntent.amount_received / 100;
-//   //   const currency = paymentIntent.currency;
-
-//   //   await topupWalletService({ companyId, amount, currency });
-//   //   console.log(`Wallet credited (PI) for company ${companyId} with ${amount} ${currency}`);
-//   // }
-
-//    if (event.type === "checkout.session.completed") {
-//     const paymentIntent = event.data.object;
-//     const session = event.data.object;
-//     const companyId = parseInt(session.metadata.companyId);
-//     const amount = session.amount_total / 100;
-//     const currency = session.currency;
-//     const status = "success";
-
-//   const charge = paymentIntent.charges?.data?.[0];
-//   const receipt_url = charge?.receipt_url || null;
-//   console.log("receipt", receipt_url);
-
-   
-//     await topupWalletService({ companyId, amount, currency, status, receipt_url });
-//     console.log(`Wallet credited (CS) for company ${companyId} with ${amount} ${currency}`);
-//   }
-
-//   res.json({ received: true });
-// });
-
-export const paystackwebhook = asyncHandler(async (req, res) => {
+export const depositToBank = asyncHandler(async(req, res) => {
   try {
-    const event = JSON.parse(req.body.toString());
-    console.log("Paystack Webhook Event:", event);
+    const user = req.user;
 
-    if (event.event === "charge.success") {
-      const reference = event.data.reference;
+    const { companyId, amount, currency} = req.body; 
 
-      // Verify with Paystack
-      const verifyResponse = await paystack.get(`/transaction/verify/${reference}`);
-      const verifiedData = verifyResponse.data.data;
+    if (!companyId || !amount ) {
+      return res.status(400).json({ error: "companyId, amount, destinationBankId, destinationBankAccountNumber, and destinationBankAccountName are required" });
+    }
 
-      if (verifiedData.status === "success") {
-        const companyId = parseInt(verifiedData.metadata?.companyId);
-        const amount = verifiedData.amount / 100;
-        const currency = verifiedData.currency;
-        const status = "success";
-        const receipt_url = verifiedData.reference;
+    if (user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Only admins can initiate bank deposits" });
+    }
 
-        await topupWalletService({ companyId, amount, currency, status, receipt_url });
+    if (user.companyId !== parseInt(companyId)) {
+      return res.status(403).json({ error: "You cannot initiate deposits for another company's wallet" });
+    }
 
-        console.log(`✅ Wallet credited for company ${companyId} with ${amount} ${currency}`);
+    const referenceNumber = `DepositToBank${companyId}-${Date.now()}`;
+
+    console.log("Initiating Paga Deposit to Bank:", referenceNumber);
+    const body = {
+      referenceNumber,
+      amount,
+      currency: currency || "NGN",
+      destinationBankUUID: process.env.destinationBankUUID,
+      destinationBankAccountNumber: process.env.destinationBankAccountNumber,
+    };
+
+    console.log("Paga Deposit Request Body:", body);
+
+    const response = await paga.post("/depositToBank", body);
+
+    console.log(" Paga Deposit Response:", response.data);
+
+    return res.status(200).json({
+      success: true,
+      data: response.data
+    });
+
+  } catch (error) {
+    console.error(" Error in Payment:", error.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.response?.data?.message || "Failed to initialize payment with Paga",
+    });
+  }
+});
+
+
+//getBank
+export const getBanks = asyncHandler(async (req, res) => {
+  try {
+    const referenceNumber = `GetBanks-${Date.now()}`;
+    console.log("Fetching Banks from Paga:", referenceNumber);
+    const body = {
+      referenceNumber,
+    };
+    console.log("Paga Get Banks Request Body:", body);  
+    const response = await paga.post("/getBanks", body);
+    console.log(" Paga Get Banks Response:", response.data);
+    return res.status(200).json({
+      success: true,
+      data: response.data,
+    });
+  } catch (error) {
+    console.error(" Error Fetching Banks:", error.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.response?.data?.message || "Failed to fetch banks from Paga",
+    });
+  }
+});
+
+
+export const pagaWebhook = asyncHandler(async (req, res) => {
+  try {
+    const data = req.body;
+    console.log("📩 Paga Webhook Received:", data);
+
+    const hashString = `${data.transactionReference}${data.accountNumber}${data.amount}${process.env.PAGA_HMAC_SECRET}`;
+    const computedHash = crypto.createHash("sha512").update(hashString).digest("hex");
+
+    if (computedHash.toLowerCase() !== data.hash.toLowerCase()) {
+      console.warn("⚠️ Invalid Paga webhook hash!");
+      return res.status(400).json({ error: "Invalid signature" });
+    }
+
+    console.log("Paga hash verified!");
+
+    if (data.statusCode === "0" && data.statusMessage.toLowerCase() === "success") {
+        const company = await prisma.company.findFirst({
+      where: {
+        companyKyc: {
+          accountNumber: data.accountNumber
+        }
       }
+    })
+
+      if (!company) {
+        console.warn("⚠️ No company found for accountNumber:", data.accountNumber);
+        return res.sendStatus(200); 
+      }
+
+      
+      const amount = parseFloat(data.amount.replace(/,/g, ""));
+      await topupWalletService({
+        companyId: company.id,
+        amount,
+        currency: "NGN",
+        status: "success",
+        receipt_url: data.transactionReference,
+      });
+
+      console.log(` Wallet credited for company ${company.id} with ₦${amount}`);
+    } else {
+      console.warn(" Non-success status received:", data.statusMessage);
     }
 
     res.sendStatus(200);
   } catch (error) {
-    console.error("Webhook Error:", error.message);
+    console.error("🚨 Paga Webhook Error:", error.message);
     res.status(500).json({ error: "Webhook handling failed" });
   }
 });
+
 
 
 
