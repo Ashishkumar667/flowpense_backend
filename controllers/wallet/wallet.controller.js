@@ -33,7 +33,7 @@ export const createPersistentPayment = asyncHandler(async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const referenceNumber = `${companyId}-${Date.now()}`;
-
+    const accountReference = `COMP-${companyId}`;
 
     let response;
       const body = {
@@ -41,7 +41,7 @@ export const createPersistentPayment = asyncHandler(async (req, res) => {
         accountName: `${user.firstName} ${user.lastName}`,
         firstName: user.firstName,
         lastName: user.lastName,
-        accountReference:referenceNumber || "123467891334",
+        accountReference: accountReference || "123467891334",
         phoneNumber: user.mobile,
         callbackUrl: process.env.WEBHOOK_URL || "http://localhost:9091/test-callback",
       };
@@ -49,6 +49,18 @@ export const createPersistentPayment = asyncHandler(async (req, res) => {
       console.log("Paga Request Body:", body);
       response = await pagaPersistentPayment.post("/registerPersistentPaymentAccount", body);
     
+      // await prisma.companyKyc.upsert({
+      //   where: { companyId: parseInt(companyId) },
+      //   update: {
+      //     accountNumber: response.data.accountNumber,
+      //     accountName: response.data.accountName,
+      //   },
+      //   create: {
+      //     companyId: parseInt(companyId),
+      //     accountNumber: response.data.accountNumber,
+      //     accountName: response.data.accountName,
+      //   },
+      // });
 
     console.log(" Paga Response:", response.data);
     return res.status(200).json({ 
