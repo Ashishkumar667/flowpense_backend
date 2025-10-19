@@ -32,8 +32,25 @@ export const createPersistentPayment = asyncHandler(async (req, res) => {
      });
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    const company =  await prisma.company.findUnique({
+      where: { id: parseInt(companyId) }
+    });
+
+    if (!company) return res.status(404).json({ error: "Company not found" });
+
+    if(company?.VirtualaccountNumber){
+       return res.status(200).json({
+        success: true,
+        message: "Company already has a persistent payment account.",
+        data: {
+          accountNumber: company.VirtualaccountNumber,
+          bankName: company.Bank || "Paga",
+        },
+      });
+    }
+
     const referenceNumber = `${companyId}-${Date.now()}`;
-    const accountReference = `COMP-${companyId}`;
+    const accountReference = `COMP-${companyId}-${Date.now()}`;
 
     let response;
       const body = {
@@ -49,18 +66,18 @@ export const createPersistentPayment = asyncHandler(async (req, res) => {
       console.log("Paga Request Body:", body);
       response = await pagaPersistentPayment.post("/registerPersistentPaymentAccount", body);
     
-      // await prisma.companyKyc.upsert({
-      //   where: { companyId: parseInt(companyId) },
-      //   update: {
-      //     accountNumber: response.data.accountNumber,
-      //     accountName: response.data.accountName,
-      //   },
-      //   create: {
-      //     companyId: parseInt(companyId),
-      //     accountNumber: response.data.accountNumber,
-      //     accountName: response.data.accountName,
-      //   },
-      // });
+      await prisma.company.upsert({
+        where: { companyId: parseInt(companyId) },
+        update: {
+          VirtualaccountNumber: response.data.accountNumber,
+          Bank: response.data.bankName || "Paga",
+        },
+        create: {
+          companyId: parseInt(companyId),
+          VirtualaccountNumber: response.data.accountNumber,
+          Bank: response.data.bankName || "Paga",
+        },
+      });
 
     console.log(" Paga Response:", response.data);
     return res.status(200).json({ 
@@ -169,10 +186,8 @@ export const pagaWebhook = asyncHandler(async (req, res) => {
 
     if (data.statusCode === "0" && data.statusMessage.toLowerCase() === "success") {
         const company = await prisma.company.findFirst({
-      where: {
-        companyKyc: {
-          accountNumber: data.accountNumber
-        }
+        where: {
+            VirtualaccountNumber: data.accountNumber
       }
     })
 

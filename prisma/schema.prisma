@@ -72,6 +72,8 @@ model Company {
   country       String
   kycStatus     String         @default("pending")
   walletBalance Float          @default(0)
+  VirtualaccountNumber      String?
+  Bank          String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
