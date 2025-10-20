@@ -66,18 +66,13 @@ export const createPersistentPayment = asyncHandler(async (req, res) => {
       console.log("Paga Request Body:", body);
       response = await pagaPersistentPayment.post("/registerPersistentPaymentAccount", body);
     
-      await prisma.company.upsert({
-        where: { companyId: parseInt(companyId) },
-        update: {
-          VirtualaccountNumber: response.data.accountNumber,
-          Bank: response.data.bankName || "Paga",
+      await prisma.company.update({
+          where: { id: parseInt(companyId) },
+            data: {
+              VirtualaccountNumber: response.data.accountNumber,
+              Bank: response.data.bankName || "Paga",
         },
-        create: {
-          companyId: parseInt(companyId),
-          VirtualaccountNumber: response.data.accountNumber,
-          Bank: response.data.bankName || "Paga",
-        },
-      });
+});
 
     console.log(" Paga Response:", response.data);
     return res.status(200).json({ 
