@@ -195,10 +195,9 @@ export const resendVerificationOtp = asyncHandler(async (req, res) => {
 
 
 export const loginUser = asyncHandler(async(req, res) => {
-    console.log("time", Date.now())
+    console.log("time", new Date())
     try {
         const { email, password } = req.body;
-        //console.log("Login Request Body:", req.body);
 
         if(!email || !password){
             return res.status(400).json({ message: "All fields are required" });
@@ -241,9 +240,9 @@ export const loginUser = asyncHandler(async(req, res) => {
         },
     });
 
-    console.log("time for email sending:", new Date());
-    await loginOtpEmailTemplate(email, user.firstName, otpCode);
-    console.log("time after email sent:", new Date());
+    
+    // await loginOtpEmailTemplate(email, user.firstName, otpCode); commented out for now
+  
 
         // const { accessToken, refreshToken } = generateTokens(user);
 
