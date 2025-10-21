@@ -9,6 +9,8 @@ import {
 } from "./wallet.service.js";
 import  prisma  from "../../config/db.js";
 import crypto from 'crypto'
+import dotenv from 'dotenv';
+dotenv.config();
 
 //paga
 export const createPersistentPayment = asyncHandler(async (req, res) => {
@@ -176,13 +178,16 @@ export const getBanks = asyncHandler(async (req, res) => {
 export const pagaWebhook = asyncHandler(async (req, res) => {
   try {
     const data = req.body;
-    console.log("📩 Paga Webhook Received:", data);
+     console.log(" Paga Webhook Received:", data);
+     console.log("🔔 Webhook triggered!");
+     console.log("Headers:", req.headers);
+     console.log("Raw Body:", req.body.toString());
 
     const hashString = `${data.transactionReference}${data.accountNumber}${data.amount}${process.env.PAGA_HMAC_SECRET}`;
     const computedHash = crypto.createHash("sha512").update(hashString).digest("hex");
 
     if (computedHash.toLowerCase() !== data.hash.toLowerCase()) {
-      console.warn("⚠️ Invalid Paga webhook hash!");
+      console.warn(" Invalid Paga webhook hash!");
       return res.status(400).json({ error: "Invalid signature" });
     }
 
@@ -217,7 +222,7 @@ export const pagaWebhook = asyncHandler(async (req, res) => {
 
     res.sendStatus(200);
   } catch (error) {
-    console.error("🚨 Paga Webhook Error:", error.message);
+    console.error(" Paga Webhook Error:", error.message);
     res.status(500).json({ error: "Webhook handling failed" });
   }
 });
