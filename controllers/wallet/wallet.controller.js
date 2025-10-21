@@ -203,7 +203,7 @@ export const pagaWebhook = asyncHandler(async (req, res) => {
 
     const expectedHash = crypto
       .createHash("sha512")
-      .update(rawBody + process.env.PAGA_HMAC_SECRET)
+      .update(data.statusCode + data.accountNumber + data.amount + data.clearingFeeAmount + data.transferFeeAmount + process.env.PAGA_HMAC_SECRET)
       .digest("hex");
 
     console.log("Received hash:", data.hash);
