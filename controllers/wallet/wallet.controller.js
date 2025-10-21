@@ -177,9 +177,12 @@ export const getBanks = asyncHandler(async (req, res) => {
 
 export const pagaWebhook = asyncHandler(async (req, res) => {
   try {
-    const data = req.body;
-     console.log(" Paga Webhook Received:", data);
-     console.log("🔔 Webhook triggered!");
+    // const data = req.body;
+     
+    const rawBody = req.body.toString(); 
+    const data = JSON.parse(rawBody);
+    console.log(" Paga Webhook Received:", data);
+     console.log(" Webhook triggered!");
      console.log("Headers:", req.headers);
      console.log("Raw Body:", req.body.toString());
 
@@ -245,3 +248,4 @@ export const getWalletLedger = asyncHandler(async (req, res) => {
     res.status(500).json({ error: "Failed to fetch wallet ledger" });
   }
 });
+ 
