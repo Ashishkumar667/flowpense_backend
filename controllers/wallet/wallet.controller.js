@@ -107,6 +107,15 @@ export const depositToBank = asyncHandler(async(req, res) => {
       return res.status(403).json({ error: "You cannot initiate deposits for another company's wallet" });
     }
 
+    const company =  await prisma.company.findUnique({
+      where: { id: parseInt(companyId) }
+    });
+    if (!company) return res.status(404).json({ error: "Company not found" });
+
+    if (!company?.VirtualaccountNumber) {
+      return res.status(400).json({ error: "Company does not have a persistent payment account" });
+    }
+
     const referenceNumber = `DepositToBank${companyId}-${Date.now()}`;
 
     console.log("Initiating Paga Deposit to Bank:", referenceNumber);
@@ -115,7 +124,7 @@ export const depositToBank = asyncHandler(async(req, res) => {
       amount,
       currency: currency || "NGN",
       destinationBankUUID: process.env.destinationBankUUID,
-      destinationBankAccountNumber: process.env.destinationBankAccountNumber,
+      destinationBankAccountNumber: company.VirtualaccountNumber,
     };
 
     console.log("Paga Deposit Request Body:", body);
