@@ -179,17 +179,37 @@ export const pagaWebhook = asyncHandler(async (req, res) => {
   try {
     // const data = req.body;
      
-    const rawBody = req.body.toString(); 
+    // const rawBody = req.body.toString(); 
+    // const data = JSON.parse(rawBody);
+    // console.log(" Paga Webhook Received:", data);
+    //  console.log(" Webhook triggered!");
+    //  console.log("Headers:", req.headers);
+    //  console.log("Raw Body:", req.body.toString());
+
+    // const hashString = `${data.transactionReference}${data.accountNumber}${data.amount}${process.env.PAGA_HMAC_SECRET}`;
+    // const computedHash = crypto.createHash("sha512").update(hashString).digest("hex");
+
+    // if (computedHash.toLowerCase() !== data.hash.toLowerCase()) {
+    //   console.warn(" Invalid Paga webhook hash!");
+    //   return res.status(400).json({ error: "Invalid signature" });
+    // }
+    const rawBody = req.body.toString("utf8");
     const data = JSON.parse(rawBody);
+
+    console.log(" Webhook triggered!");
     console.log(" Paga Webhook Received:", data);
-     console.log(" Webhook triggered!");
-     console.log("Headers:", req.headers);
-     console.log("Raw Body:", req.body.toString());
+    console.log("Headers:", req.headers);
+    console.log("Raw Body:", rawBody);
 
-    const hashString = `${data.transactionReference}${data.accountNumber}${data.amount}${process.env.PAGA_HMAC_SECRET}`;
-    const computedHash = crypto.createHash("sha512").update(hashString).digest("hex");
+    const expectedHash = crypto
+      .createHash("sha512")
+      .update(rawBody + process.env.PAGA_CLIENT_SECRET)
+      .digest("hex");
 
-    if (computedHash.toLowerCase() !== data.hash.toLowerCase()) {
+    console.log("Received hash:", data.hash);
+    console.log("Expected hash:", expectedHash);
+
+    if (data.hash.toLowerCase() !== expectedHash.toLowerCase()) {
       console.warn(" Invalid Paga webhook hash!");
       return res.status(400).json({ error: "Invalid signature" });
     }
