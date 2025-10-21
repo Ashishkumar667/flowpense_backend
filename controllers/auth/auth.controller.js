@@ -219,9 +219,7 @@ export const loginUser = asyncHandler(async(req, res) => {
         //     return res.status(400).json({ message: "Please enable and verify 2FA to login" });
         // }
 
-        console.log("time before password comparison", new Date());
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        console.log("time after password comparison", new Date());
 
         if(!isPasswordValid){
             return res.status(400).json({ message: "Invalid email or password" });
