@@ -193,10 +193,11 @@ export const resendVerificationOtp = asyncHandler(async (req, res) => {
 });
 
 
-
+    console.log("before executing the login function", new Date());
 export const loginUser = asyncHandler(async(req, res) => {
-    console.log("time", new Date())
+    console.log("after excuting the function but before try (time)", new Date())
     try {
+        console.log("time after the try catch", new Date())
         const { email, password } = req.body;
 
         if(!email || !password){
@@ -218,7 +219,9 @@ export const loginUser = asyncHandler(async(req, res) => {
         //     return res.status(400).json({ message: "Please enable and verify 2FA to login" });
         // }
 
+        console.log("time before password comparison", new Date());
         const isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log("time after password comparison", new Date());
 
         if(!isPasswordValid){
             return res.status(400).json({ message: "Invalid email or password" });
@@ -241,7 +244,7 @@ export const loginUser = asyncHandler(async(req, res) => {
     });
 
     
-    // await loginOtpEmailTemplate(email, user.firstName, otpCode); commented out for now
+    await loginOtpEmailTemplate(email, user.firstName, otpCode); 
   
 
         // const { accessToken, refreshToken } = generateTokens(user);
