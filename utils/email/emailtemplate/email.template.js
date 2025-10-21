@@ -62,7 +62,7 @@ export const loginOtpEmailTemplate = asyncHandler(async(email, firstName, otp) =
       </div>
     `;
     await sendEmail(email, subject, html);
-    console.log("Password reset email sent to:", email);
+   // console.log("confirmation email sent :", email);
 })
 
 export const cardCreationEmailTemplate = asyncHandler(async(email, firstName, cardName, cardNumber, cardType) => {  

@@ -195,6 +195,7 @@ export const resendVerificationOtp = asyncHandler(async (req, res) => {
 
 
 export const loginUser = asyncHandler(async(req, res) => {
+    console.log("time", Date.now())
     try {
         const { email, password } = req.body;
         //console.log("Login Request Body:", req.body);
@@ -203,9 +204,7 @@ export const loginUser = asyncHandler(async(req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-        console.log("time ", new Date())
         const user = await prisma.user.findUnique({ where: { email } });
-         console.log("after query time ", new Date())
 
 
         if(!user){
@@ -242,9 +241,9 @@ export const loginUser = asyncHandler(async(req, res) => {
         },
     });
 
-    console.log("Sending OTP to email:", email);
+    console.log("time for email sending:", new Date());
     await loginOtpEmailTemplate(email, user.firstName, otpCode);
-    console.log("EMail sent to:", email);
+    console.log("time after email sent:", new Date());
 
         // const { accessToken, refreshToken } = generateTokens(user);
 
@@ -451,7 +450,7 @@ export const forgotPass = asyncHandler(async(req, res) => {
             create: { userId: user.id, code: otp, expiresAt: otpExpiry }
         }); 
         await passwordResetEmailTemplate(email, user.firstName, otp);
-        console.log("Password reset email sent to:", email);
+        //console.log("Password reset email sent to:", email);
 
         const token = jwt.sign({
             userId: user.id,
