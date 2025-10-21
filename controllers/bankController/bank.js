@@ -1,5 +1,8 @@
 import { paystack } from '../../provider/paystack/paystack.js';
-import asyncHandler from 'express-async-handler';   
+import asyncHandler from 'express-async-handler';  
+import prisma from '../../config/db.js'; 
+import redisClient from '../../config/cache/redis.js';
+import { redis } from 'googleapis/build/src/apis/redis/index.js';
 
 export const getBank = asyncHandler(async(req,res) => {
     try {
@@ -51,6 +54,12 @@ export const addBank = asyncHandler(async(req,res) => {
                 country
             }
         });
+        console.log("Bank added successfully", bank);
+
+         
+         const cachedKey = `user_bank_${userId}`;
+         await redisClient.del(cachedKey);
+         
         res.status(200).json({
             message:"Bank added successfully",
             bank
@@ -70,6 +79,18 @@ export const addBank = asyncHandler(async(req,res) => {
 export const getUserBank = asyncHandler(async(req,res) => {
     try {
         const userId = req.user.id;
+
+        const cachedKey = `user_bank_${userId}`;
+        const cachedData = await redisClient.get(cachedKey);
+
+        if(cachedData){
+            console.log("Fetching bank from cache");
+            return res.status(200).json({
+                message:"Bank fetched successfully from cache",
+                bank: JSON.parse(cachedData)
+            });
+        }
+
         const bank = await prisma.bank.findMany({
             where: { userId }
         });
@@ -79,6 +100,7 @@ export const getUserBank = asyncHandler(async(req,res) => {
                 message:"No bank found for this user"
             });
         }
+        await redisClient.setEx(cachedKey, 3600, JSON.stringify(bank));
 
         res.status(200).json({
             message:"Bank fetched successfully",
