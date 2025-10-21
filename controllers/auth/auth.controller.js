@@ -203,7 +203,10 @@ export const loginUser = asyncHandler(async(req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
+        console.log("time ", new Date())
         const user = await prisma.user.findUnique({ where: { email } });
+         console.log("after query time ", new Date())
+
 
         if(!user){
             return res.status(400).json({ message: "Invalid email or password" });
