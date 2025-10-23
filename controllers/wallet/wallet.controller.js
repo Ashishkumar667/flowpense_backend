@@ -114,6 +114,10 @@ export const depositToBank = asyncHandler(async(req, res) => {
     });
     if (!company) return res.status(404).json({ error: "Company not found" });
 
+    if(company.walletBalance < amount){
+      return res.status(400).json({ error: "Insufficient wallet balance for this deposit" });
+    }
+
     if (!company?.VirtualaccountNumber) {
       return res.status(400).json({ error: "Company does not have a persistent payment account" });
     }
@@ -133,7 +137,32 @@ export const depositToBank = asyncHandler(async(req, res) => {
 
     const response = await paga.post("/depositToBank", body);
 
-    console.log(" Paga Deposit Response:", response.data);
+    const Pagaresponsedata = response.data;
+
+    console.log(" Paga Deposit Response:", Pagaresponsedata);
+
+    if(Pagaresponsedata.responseCode == "0" ){  //changes made for updating the wallet
+           company.walletBalance -= amount;
+           await prisma.company.update({
+            where: { id: parseInt(companyId) },
+              data: {
+                walletBalance: company.walletBalance,
+          },
+    });
+
+           await prisma.walletLedger.create({
+            data: {
+              companyId: parseInt(companyId),
+              txType: "debit",
+              amount: amount,
+              currency: currency || "NGN",
+              balanceAfter: company.walletBalance,
+              status: "success",
+              receipt_url: Pagaresponsedata.transactionReference,
+            },
+          });
+    }
+
 
     return res.status(200).json({
       success: true,
