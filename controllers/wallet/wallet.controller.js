@@ -143,10 +143,12 @@ try {
 
   const feeAmount = Number(Pagaresponsedata.fee || 0);
   const amountValue = Number(amount);
-
+  console.log("Parsed amount and fee:", { amountValue, feeAmount });
   if (isNaN(amountValue)) throw new Error("Invalid amount");
 
-  if (Pagaresponsedata.responseCode === "0") {
+  console.log("checking paga response code:", Pagaresponsedata.responseCode);
+  if (Pagaresponsedata.responseCode === "0" || Pagaresponsedata.responseCode === 0 ) {
+    console.log("Paga Deposit Successful:");
     const totalDebit = amountValue + feeAmount;
     company.walletBalance -= totalDebit;
 
