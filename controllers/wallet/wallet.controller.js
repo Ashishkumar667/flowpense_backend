@@ -135,39 +135,77 @@ export const depositToBank = asyncHandler(async(req, res) => {
 
     console.log("Paga Deposit Request Body:", body);
 
-    const response = await paga.post("/depositToBank", body);
+try {
+  const response = await paga.post("/depositToBank", body);
+  const Pagaresponsedata = response.data;
 
-    const Pagaresponsedata = response.data;
+  console.log("Paga Deposit Response:", Pagaresponsedata);
 
-    console.log(" Paga Deposit Response:", Pagaresponsedata);
+  const feeAmount = Number(Pagaresponsedata.fee || 0);
+  const amountValue = Number(amount);
 
-    if(Pagaresponsedata.responseCode == "0" ){  //changes made for updating the wallet
-           company.walletBalance -= amount;
-           await prisma.company.update({
-            where: { id: parseInt(companyId) },
-              data: {
-                walletBalance: company.walletBalance,
-          },
+  if (isNaN(amountValue)) throw new Error("Invalid amount");
+
+  if (Pagaresponsedata.responseCode === "0") {
+    const totalDebit = amountValue + feeAmount;
+    company.walletBalance -= totalDebit;
+
+ 
+    await prisma.$transaction(async (tx) => {
+      await tx.company.update({
+        where: { id: parseInt(companyId) },
+        data: { walletBalance: company.walletBalance },
+      });
+
+      await tx.walletLedger.create({
+        data: {
+          companyId: parseInt(companyId),
+          txType: "debit",
+          amount: totalDebit,
+          currency: currency || "NGN",
+          balanceAfter: company.walletBalance,
+          status: "success",
+          receipt_url: Pagaresponsedata.transactionReference,
+        },
+      });
     });
-
-           await prisma.walletLedger.create({
-            data: {
-              companyId: parseInt(companyId),
-              txType: "debit",
-              amount: amount,
-              currency: currency || "NGN",
-              balanceAfter: company.walletBalance,
-              status: "success",
-              receipt_url: Pagaresponsedata.transactionReference,
-            },
-          });
-    }
-
 
     return res.status(200).json({
       success: true,
-      data: response.data
+      message: "Bank deposit successful",
+      reference: Pagaresponsedata.transactionReference,
+      fee: feeAmount,
+      newBalance: company.walletBalance,
     });
+  } else {
+    console.error("Paga Deposit Failed:", Pagaresponsedata.message);
+
+    await prisma.walletLedger.create({
+      data: {
+        companyId: parseInt(companyId),
+        txType: "debit",
+        amount: amountValue,
+        currency: currency || "NGN",
+        balanceAfter: company.walletBalance,
+        status: "failed",
+        receipt_url: Pagaresponsedata.transactionReference,
+      },
+    });
+
+    return res.status(400).json({
+      success: false,
+      message: Pagaresponsedata.message || "Deposit failed",
+      reference: Pagaresponsedata.transactionReference,
+    });
+  }
+} catch (error) {
+  console.error("Paga Deposit Error:", error);
+  return res.status(500).json({
+    success: false,
+    message: "Internal server error during deposit",
+    error: error.message,
+  });
+}
 
   } catch (error) {
     console.error(" Error in Payment:", error.response?.data || error.message);
