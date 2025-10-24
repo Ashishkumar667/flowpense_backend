@@ -49,17 +49,17 @@ export const approvalController = asyncHandler(async (req, res) => {
 
       await prisma.card.update({
         where: { id: expense.cardId },
-        data: { CardFunding: expense.card.CardFunding - expense.Amount },
+        data: { CardFunding: expense.card.CardFunding - expense.Amount, updatedAt: new Date() },
       });
 
       updatedExpense = await prisma.cardExpense.update({
         where: { id: expenseId },
-        data: { status: "Approved" },
+        data: { status: "Approved", updatedAt: new Date() },
       });
     } else if (action === "REJECT") {
       updatedExpense = await prisma.cardExpense.update({
         where: { id: expenseId },
-        data: { status: "Rejected" },
+        data: { status: "Rejected" , updatedAt: new Date() },
       });
     } else {
       return res.status(400).json({ error: "Invalid action" });

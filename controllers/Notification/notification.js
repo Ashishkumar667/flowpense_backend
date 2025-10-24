@@ -16,7 +16,7 @@ export const getNotification = asyncHandler(async(req, res) => {
 export const markedNotification = asyncHandler(async(req, res) => {
     const { id } = req.query; 
     const notification = await prisma.notification.findUnique({
-        where:{ id: id},
+        where:{ id: parseInt(id)},
         data:{
             read: true
         }

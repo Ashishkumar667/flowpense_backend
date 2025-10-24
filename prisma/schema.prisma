@@ -31,6 +31,7 @@ model User {
   isVerified   Boolean      @default(false)        
   mobile       String       @unique
   createdAt    DateTime     @default(now())
+  updatedAt    DateTime?     @updatedAt
   role         Role         @default(EMPLOYEE)
   mfaSecret    String?
   mfaEnabled   Boolean      @default(false)
@@ -75,7 +76,7 @@ model Company {
   VirtualaccountNumber      String?
   Bank          String?
   createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  updatedAt     DateTime?      @updatedAt
 
   users        User[]
   paystackCustomerCode String?
@@ -153,6 +154,8 @@ model Card {
   company           Company    @relation(fields: [companyId], references: [id])
    expenses             CardExpense[]
    cardFundingRequest   CardFundingRequest[]
+   createdAt     DateTime     @default(now())
+   updatedAt     DateTime?     @default(now())
 }
 
 model CardExpense {
@@ -167,6 +170,7 @@ model CardExpense {
     card        Card        @relation(fields: [cardId], references: [id])
     userId      Int
     user        User        @relation(fields: [userId], references: [id])
+    updatedAt   DateTime?    @default(now())
 }
 
 model Team {

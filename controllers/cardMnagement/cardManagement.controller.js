@@ -49,8 +49,6 @@ export const createCardController = asyncHandler(async(req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-    
-
         const CardNumber = generateCardNumber();
         console.log("Generated Card Number:", CardNumber);
         const card = await createCardServices({ 
@@ -67,6 +65,7 @@ export const createCardController = asyncHandler(async(req, res) => {
                   CardFunding: cardFunding,
                   BlockedCategory: blockedCategory,
                   companyId: user.companyId,
+                  createdAt: new Date(),
 
          });
 
@@ -213,7 +212,7 @@ export const blockUnblockCard = asyncHandler(async(req, res) => {
         }
         const updatedCard = await prisma.card.update({
             where: { id: parseInt(cardId) },
-            data: { status: action }
+            data: { status: action, updatedAt: new Date() }
         });
 
         await redisClient.del(`all_cards_company_${companyId}`);
@@ -263,7 +262,8 @@ export const editCardLimits = asyncHandler(async(req, res) => {
                 DailySpendLimit: dailySpendLimit,
                 WeeklySpendLimit: weeklySpendLimit,
                 MonthlyLimit: monthlyLimit,
-                PerTransactionLimit:perTransactionLimit
+                PerTransactionLimit:perTransactionLimit,
+                updatedAt: new Date()
             }
         }); 
 

@@ -14,6 +14,7 @@ export const createCardServices = async ({
   CardFunding,
   BlockedCategory,
   companyId,
+  createdAt,
 }) => {
   try {
     const card = await prisma.card.create({
@@ -31,6 +32,7 @@ export const createCardServices = async ({
         CardFunding,
         BlockedCategory,
         companyId,
+        createdAt,
       },
     });
     return card;
