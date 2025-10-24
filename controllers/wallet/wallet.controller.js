@@ -177,6 +177,7 @@ try {
       reference: Pagaresponsedata.transactionReference,
       fee: feeAmount,
       newBalance: company.walletBalance,
+      pagaResponse: Pagaresponsedata,
     });
   } else {
     console.error("Paga Deposit Failed:", Pagaresponsedata.message);
