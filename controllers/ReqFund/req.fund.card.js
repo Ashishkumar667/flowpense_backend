@@ -1,4 +1,4 @@
-import prisma from "../../config/db.js";
+import { PrismaClient, Role } from "@prisma/client";
 import asyncHandler from "express-async-handler";
 import {
     sendRequestForCradFunding
@@ -6,6 +6,7 @@ import {
 import {
   SendingNotification
 } from '../../utils/Notification/Notification.js';
+const prisma = new PrismaClient();
 
 export const reqForCardFunding = asyncHandler(async (req, res) => {
   try {
@@ -39,7 +40,7 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
       });
     }
 
-    if (user.role === "ADMIN") { //employee -> admin
+    if (user.role === Role.ADMIN) { //employee -> admin
       return res.status(403).json({
         error: "Only Employee or TeamLeads can request card funding",
       });
@@ -50,14 +51,15 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
         cardId: card.id,
         userId: user.id,
         amount: parseFloat(amount),
-        status: "PENDING", // PENDING | APPROVED | REJECTED
+        status: "PENDING", 
+        createdAt: new Date(),
       },
     });
 
     const approvers = await prisma.user.findMany({
       where: {
         companyId: card.companyId,
-        role: { in: ["ADMIN", "TEAMLEADER"] }, //, "SUPERADMIN"
+        role: { in: [Role.ADMIN, Role.TEAMLEAD] }, //, "SUPERADMIN"
       },
       select: { email: true, firstName: true },
     });
@@ -71,15 +73,16 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
         card.CardName,
         card.TeamName
       );
-    };
-    console.log("Sending notifications to approver");
+       console.log("Sending notifications to approver");
 
    const sentNotification = await SendingNotification(
-      approvers.id,
+      approver.id,
       `${user.firstName} an employee of your orgainization has requested for card funding of card ${card.CardName}.`
     );
-
     console.log("Notification sent:", sentNotification);
+    };
+
+    
     return res.status(201).json({
       success: true,
       message: "Funding request submitted successfully",
