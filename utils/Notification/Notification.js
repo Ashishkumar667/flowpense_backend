@@ -1,7 +1,6 @@
 import prisma from '../../config/db.js';
-import asyncHandler from 'express-async-handler';
 
-export const SendingNotification = asyncHandler(async(userId, message) => {
+export const SendingNotification = async(userId, message) => {
     try {
         if (!userId) {
            console.error(" Missing userId in SendingNotification");
@@ -27,9 +26,11 @@ export const SendingNotification = asyncHandler(async(userId, message) => {
      }
 
      
-
+        
+    console.log(` Notification created for user ${userId}: ${message}`);
+    return notification
     } catch (error) {
         console.error("Error sending notification:", error);
         res.status(500).json({ message: "Failed to send notification" , error: error.message});
     }
-})
+};
