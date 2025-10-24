@@ -18,7 +18,7 @@ export const approveCardFunding = asyncHandler(async (req, res) => {
     const admin = await prisma.user.findUnique({ where: { id: adminId } });
     if (!admin) return res.status(404).json({ error: "Admin not found" });
 
-    if (!["ADMIN", "SUPERADMIN"].includes(admin.role)) {
+    if (!["ADMIN", "TEAMLEADER"].includes(admin.role)) {
       return res.status(403).json({ error: "Only admins can approve funding requests" });
     }
 
@@ -87,7 +87,7 @@ export const approveCardFunding = asyncHandler(async (req, res) => {
           console.log("Sending notifications to requester");
       
          const sentNotification = await SendingNotification(
-            approvers.id,
+            fundingRequest.user.id,
             `Your funding request for card ${fundingRequest.card} has been approved.`
           );
       
@@ -96,7 +96,7 @@ export const approveCardFunding = asyncHandler(async (req, res) => {
       console.log("Sending notifications to requester");
       
          const sentNotification = await SendingNotification(
-            approvers.id,
+            fundingRequest.user.id,
             `Your funding request for card ${fundingRequest.card} has been Rejected.`
           );
       

@@ -171,7 +171,7 @@ export const updateTeam = asyncHandler(async (req, res) => {
         return res.status(400).json({ error: "Team ID is required" });  
     }
 
-    if (!TeamName && !Description && !MonthlyBudget) {
+    if (!TeamName || !Description || !MonthlyBudget) {
         return res.status(400).json({ error: "Atleast one field is required" });
     }
 
@@ -383,7 +383,7 @@ export const getAllEmployee = asyncHandler(async(req, res) => {
       return res.status(200).json({
                     message:"Employee fetched from cache",
                     success: true,
-                    user: JSON.parse(cachedData)
+                    Employee : JSON.parse(cachedData)
             });
     }
 
@@ -400,7 +400,7 @@ export const getAllEmployee = asyncHandler(async(req, res) => {
       })
     };
 
-    await redisClient.set(cachedKey, JSON.stringify(employee), {EX:60});
+    await redisClient.set(cachedKey, JSON.stringify(employee), {EX:120});
     
     res.status(200).json({
         success:true,

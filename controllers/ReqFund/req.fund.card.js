@@ -57,7 +57,7 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
     const approvers = await prisma.user.findMany({
       where: {
         companyId: card.companyId,
-        role: { in: ["ADMIN"] }, //, "SUPERADMIN"
+        role: { in: ["ADMIN", "TEAMLEADER"] }, //, "SUPERADMIN"
       },
       select: { email: true, firstName: true },
     });
@@ -76,7 +76,7 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
 
    const sentNotification = await SendingNotification(
       approvers.id,
-      `Your funding request for card ${card.CardName} has been submitted and is pending approval.`
+      `${user.firstName} an employee of your orgainization has requested for card funding of card ${card.CardName}.`
     );
 
     console.log("Notification sent:", sentNotification);
