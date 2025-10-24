@@ -28,7 +28,6 @@ export const SendingNotification = async(userId, message) => {
      
         
     console.log(` Notification created for user ${userId}: ${message}`);
-    return notification
     } catch (error) {
         console.error("Error sending notification:", error);
         res.status(500).json({ message: "Failed to send notification" , error: error.message});
