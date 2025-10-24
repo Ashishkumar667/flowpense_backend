@@ -61,14 +61,15 @@ export const reqForCardFunding = asyncHandler(async (req, res) => {
         companyId: card.companyId,
         role: { in: [Role.ADMIN, Role.TEAMLEAD] }, //, "SUPERADMIN"
       },
-      select: { email: true, firstName: true },
+      select: { id: true, email: true, firstName: true },
     });
 
     for (const approver of approvers) {
       await sendRequestForCradFunding(
         approver.email,           
         approver.firstName,       
-        `${user.firstName} ${user.lastName}`, 
+        `${user.firstName} ${user.lastName}`,
+        parseFloat(amount), 
         card.id,
         card.CardName,
         card.TeamName

@@ -3,6 +3,11 @@ import asyncHandler from 'express-async-handler';
 
 export const SendingNotification = asyncHandler(async(userId, message) => {
     try {
+        if (!userId) {
+           console.error(" Missing userId in SendingNotification");
+           return null;
+        }
+
         await prisma.notification.create({
             data: {
                 userId,
