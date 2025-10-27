@@ -85,7 +85,7 @@ export const createPersistentPayment = asyncHandler(async (req, res) => {
     console.error(" Error in Payment:", error.response?.data || error.message);
     return res.status(500).json({
       success: false,
-      error: error.response?.data?.message || "Failed to initialize payment with Paga",
+      error: error.response?.data || error.message ,
     });
   }
 });
