@@ -206,14 +206,14 @@ try {
     success: false,
     message: "Internal server error during deposit",
     error: error,
-  });
+  });  
 }
 
   } catch (error) {
     console.error(" Error in Payment:", error.response?.data || error.message);
     return res.status(500).json({
       success: false,
-      error: error.response?.data?.message || "Failed to initialize payment with Paga",
+      error: error.response?.data || error.message,
     });
   }
 });
