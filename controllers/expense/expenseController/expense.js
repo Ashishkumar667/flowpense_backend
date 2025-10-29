@@ -141,8 +141,15 @@ export const getExpenses = asyncHandler(async (req, res) => {
         });
 
 
-    // if (user.role !== "ADMIN")
-    //   return res.status(403).json({ error: "Only admin users can access expense data" });
+    const card = await prisma.card.findUnique({
+      where: { cardId: Number(cardId)}
+    });
+
+    if(card.companyId != user.companyId){
+      return res.status(400).json({
+        message:"You can not see the others company expenses"
+      })
+    }
 
     const redisKey = `expenses:card:${cardId}`;
     const cachedExpenses = await redisClient.get(redisKey);
