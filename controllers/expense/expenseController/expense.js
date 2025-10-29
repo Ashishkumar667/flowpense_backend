@@ -28,6 +28,10 @@ export const expenseController = asyncHandler(async (req, res) => {
              error: "User not found"
      });
 
+     if(user.role == "ADMIN"){
+        return res.status(403).json({ error: "Only employee can add expenses " });
+     }
+
     const card = await prisma.card.findUnique({
       where: { id: Number(cardId) },
     });
@@ -36,7 +40,7 @@ export const expenseController = asyncHandler(async (req, res) => {
             error: "Card not found" 
           });
 
-    if (card.CardFunding < numericAmount)
+    if (card.CardFunding < numericAmount || card.CardFunding == 0)
       return res.status(400).json({ error: "Insufficient card balance" });
 
     

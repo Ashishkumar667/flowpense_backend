@@ -170,6 +170,9 @@ model CardExpense {
     card        Card        @relation(fields: [cardId], references: [id])
     userId      Int
     user        User        @relation(fields: [userId], references: [id])
+    receiptUrl       String?  
+    verified         Boolean   @default(false)
+    verificationNote String?   
     updatedAt   DateTime?    @default(now())
 }
 

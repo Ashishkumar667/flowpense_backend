@@ -84,7 +84,7 @@ export const createPersistentPayment = asyncHandler(async (req, res) => {
   } catch (error) {
     console.error(" Error in Payment:", error.response?.data || error.message);
     return res.status(500).json({
-      success: false,
+      success: false, 
       error: error.response?.data || error.message ,
     });
   }
