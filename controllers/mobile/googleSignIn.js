@@ -15,7 +15,7 @@ const generateJwt = (user) =>
       email: user.email,
       name: user.firstName,
       provider: "google",
-      role:role.user
+      role:user.role
     },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
@@ -35,7 +35,10 @@ export const googleMobileLogin = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
+    console.log("Token audience:", payload.aud);
     const { email, name, picture, sub: googleId } = payload;
+    
+
 
     let user = await prisma.user.findUnique({
       where: { email },
