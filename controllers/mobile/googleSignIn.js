@@ -65,6 +65,7 @@ export const googleMobileLogin = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        company: user.companyId,
         profilePic: picture,
         role: role
       },
@@ -120,6 +121,7 @@ export const googleIOSMobileLogin = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        company: user.companyId,
         profilePic: picture,
         role: role 
       },
