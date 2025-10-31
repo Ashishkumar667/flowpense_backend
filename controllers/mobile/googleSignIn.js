@@ -70,7 +70,7 @@ export const googleMobileLogin = async (req, res) => {
         email: user.email,
         company: user.companyId,
         profilePic: picture,
-        role: role
+        role: user.role 
       },
     });
   } catch (error) {
